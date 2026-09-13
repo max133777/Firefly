@@ -14,11 +14,7 @@ const links: NavBarLink[] = [
 ];
 
 export const navBarConfig: NavBarConfig = { links };
-
-export const navBarSearchConfig: NavBarSearchConfig = {
-	method: NavBarSearchMethod.PageFind,
-};
-
+export const navBarSearchConfig: NavBarSearchConfig = { method: NavBarSearchMethod.PageFind };
 export const LinkPresets: Record<string, NavBarLink> = {
 	Home: links[0],
 	Archive: links[1],
