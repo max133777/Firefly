@@ -50,7 +50,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 			{
 				name: "MyGO!!!!! - 春日影 (MyGO!!!!! ver.)",
 				artist: "MYGO",
-				url: "/assets/music/MyGO!!!!! - 春日影 (MyGO!!!!! ver.).flac",
+				url: "/assets/music/MyGO!!!!! - 春日影 (MyGO!!!!! ver.).mp3",
 				cover: "/assets/music/cover/春日影.png",
 				lrc: "",
 			},
