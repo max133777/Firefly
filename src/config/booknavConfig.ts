@@ -75,10 +75,9 @@ export const booknavConfig: BooknavGroup[] = [
 		weight: 90,
 		items: [
 			{
-				title: "Firefly",
-				url: "https://github.com/CuteLeaf/Firefly",
-				desc: "清晰美观的 Astro 个人博客主题模板",
-				icon: "/favicon/firefly-32.png",
+				title: "立创开源硬件平台",
+				url: "https://oshwhub.com",
+				desc: "开源硬件项目与 PCB 工程分享平台",
 				weight: 10,
 			},
 		],
@@ -139,16 +138,15 @@ export const booknavConfig: BooknavGroup[] = [
 		weight: 70,
 		items: [
 			{
-				title: "Firefly Docs",
-				url: "https://docs-firefly.cuteleaf.cn",
-				desc: "Firefly 主题模板文档",
-				icon: "https://docs-firefly.cuteleaf.cn/logo.png",
+				title: "立创 EDA",
+				url: "https://lceda.cn",
+				desc: "国产在线 PCB 设计工具",
 				weight: 10,
 			},
 			{
-				title: "夏夜流萤",
-				url: "https://blog.cuteleaf.cn",
-				desc: "飞萤之火自无梦的长夜亮起",
+				title: "电子发烧友",
+				url: "https://www.elecfans.com",
+				desc: "电子技术社区与资料站",
 				weight: 9,
 			},
 		],

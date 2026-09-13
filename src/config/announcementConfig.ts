@@ -5,7 +5,8 @@ export const announcementConfig: AnnouncementConfig = {
 	title: "",
 
 	// 公告内容
-	content: "欢迎来到我的博客！这是一则示例公告。",
+	content:
+		"欢迎来到萃英电子联盟！网站正在搭建完善中，教程、资料与技术分享会陆续上线。",
 
 	// 是否允许用户关闭公告
 	closable: true,
@@ -14,7 +15,7 @@ export const announcementConfig: AnnouncementConfig = {
 		// 启用链接
 		enable: true,
 		// 链接文本
-		text: "了解更多",
+		text: "了解我们",
 		// 链接 URL
 		url: "/about/",
 		// 内部链接

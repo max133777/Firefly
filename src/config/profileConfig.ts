@@ -23,7 +23,7 @@ export const profileConfig: ProfileConfig = {
 	links: [
 		{
 			name: "主页",
-			icon: "fa7-brands:github",
+			icon: "material-symbols:home",
 			url: "/",
 			showName: false,
 		},

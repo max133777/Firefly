@@ -1,4 +1,4 @@
-﻿---
+---
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { Icon } from "astro-icon/components";
@@ -21,9 +21,10 @@ const { class: className, style, widgetConfig } = Astro.props;
 
 const showTitle = widgetConfig?.showTitle !== false;
 
-// ---- 鏋勫缓鏃舵敹闆嗙増鏈拰鐜淇℃伅 ----
+// ---- 构建时收集版本和环境信息 ----
 
-// 鍗氬鐗堟湰锛堜粠 package.json 璇诲彇锛?let blogVersion = "unknown";
+// 博客版本（从 package.json 读取）
+let blogVersion = "unknown";
 try {
 	const pkg = JSON.parse(
 		readFileSync(new URL("../../../package.json", import.meta.url), "utf-8"),
@@ -31,7 +32,7 @@ try {
 	blogVersion = pkg.version || "萃英电子联盟";
 } catch {}
 
-// Astro 鐗堟湰锛堜粠宸插畨瑁呯殑 astro 鍖呰鍙栵級
+// Astro 版本（从已安装的 astro 包读取）
 let astroVersion = "unknown";
 try {
 	const require = createRequire(import.meta.url);
@@ -39,20 +40,22 @@ try {
 	astroVersion = astroPkg.version || "unknown";
 } catch {}
 
-// Node 鐗堟湰
+// Node 版本
 const nodeVersion = process.version;
 
-// pnpm 鐗堟湰锛堜粠 npm_config_user_agent 瑙ｆ瀽锛?let pnpmVersion = "unknown";
+// pnpm 版本（从 npm_config_user_agent 解析）
+let pnpmVersion = "unknown";
 const userAgent = process.env.npm_config_user_agent || "";
 const pnpmMatch = userAgent.match(/pnpm\/([\d.]+)/);
 if (pnpmMatch) {
 	pnpmVersion = `v${pnpmMatch[1]}`;
 }
 
-// 鏋勫缓鏃堕棿
+// 构建时间
 const buildTime = formatDateI18nWithTime(new Date());
 
-// 鏋勫缓骞冲彴妫€娴嬶紙浣跨敤 ci-info 鑷姩璇嗗埆 CI 鐜锛?const unknownBuildPlatform =
+// 构建平台检测（使用 ci-info 自动识别 CI 环境）
+const unknownBuildPlatform =
 	widgetConfig?.specificConfig?.siteInfo?.unknownBuildPlatform || "Unknown CI";
 const buildPlatform = detectBuildPlatform({
 	env: process.env,
@@ -62,7 +65,8 @@ const buildPlatform = detectBuildPlatform({
 	unknownBuildPlatform,
 });
 
-// 绯荤粺淇℃伅锛堝钩鍙?+ 鏋舵瀯锛?const platformMap: Record<string, string> = {
+// 系统信息（平台 + 架构）
+const platformMap: Record<string, string> = {
 	win32: "Windows",
 	darwin: "macOS",
 	linux: "Linux",
@@ -78,15 +82,17 @@ const osName = platformMap[process.platform] || process.platform;
 const archName = archMap[process.arch] || process.arch;
 const systemInfo = `${osName} / ${archName}`;
 
-// 绔欑偣鍩熷悕锛堝幓鎺夊崗璁墠缂€锛?const siteDomain = siteConfig.site_url
+// 站点域名（去掉协议前缀）
+const siteDomain = siteConfig.site_url
 	? siteConfig.site_url.replace(/^https?:\/\//, "").replace(/\/$/, "")
 	: "unknown";
 
-// 鏂囩珷璁稿彲
+// 文章许可
 const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
 
-// ---- 缁勮灞曠ず鏁版嵁 ----
-// 濮嬬粓鏄剧ず鐨勯」鐩紙鍒楄〃锛?const mainItems = [
+// ---- 组装展示数据 ----
+// 始终显示的项目（列表）
+const mainItems = [
 	{
 		icon: "material-symbols:cloud-outline",
 		label: i18n(I18nKey.siteInfoBuildPlatform),
@@ -105,7 +111,9 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
 	},
 ];
 
-// 鍙姌鍙犵殑椤圭洰锛堟牸瀛愬竷灞€锛?// fullWidth: true 琛ㄧず鐙崰涓€琛?const detailItems: {
+// 可折叠的项目（格子布局）
+// fullWidth: true 表示独占一行
+const detailItems: {
 	icon: string;
 	label: string;
 	value: string;
@@ -160,7 +168,7 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
   style={style}
 >
   <div class="flex flex-col gap-2">
-    {/* 濮嬬粓鏄剧ず鐨勯」鐩紙鍒楄〃鍗＄墖锛?*/}
+    {/* 始终显示的项目（列表卡片） */}
     <div class="flex flex-col gap-2">
       {
         mainItems.map((item: { icon: string; label: string; value: string; href?: string }) => (
@@ -196,7 +204,7 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
       }
     </div>
 
-    {/* 鍙姌鍙犲尯鍩燂紙鏍煎瓙甯冨眬锛?*/}
+    {/* 可折叠区域（格子布局） */}
     <site-info-collapse
       data-expand-text={i18n(I18nKey.siteInfoExpand)}
       data-collapse-text={i18n(I18nKey.siteInfoCollapse)}
@@ -262,10 +270,10 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
       const iconEl = this.querySelector(".site-info-toggle-icon");
       if (!btn || !detail || !textEl) return;
 
-      const expandText = this.dataset.expandText || "灞曞紑鏋勫缓淇℃伅";
-      const collapseText = this.dataset.collapseText || "鏀惰捣鏋勫缓淇℃伅";
+      const expandText = this.dataset.expandText || "展开构建信息";
+      const collapseText = this.dataset.collapseText || "收起构建信息";
 
-      // 鍒濆鐘舵€佸凡鍦?HTML 涓€氳繃 class="collapsed" 璁惧畾锛孞S 鍙渶鍚屾鏂囧瓧
+      // 初始状态已在 HTML 中通过 class="collapsed" 设定，JS 只需同步文字
       let expanded = false;
       textEl.textContent = expandText;
 
@@ -282,4 +290,3 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
     customElements.define("site-info-collapse", SiteInfoCollapse);
   }
 </script>
-

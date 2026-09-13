@@ -99,6 +99,23 @@ export type SiteConfig = {
 		projects: boolean; // 项目展示页开关
 	};
 
+	// 首页配置
+	home?: {
+		// 首页是否显示文章列表。设为 false 时首页不渲染文章列表
+		showPostList?: boolean;
+		// 不显示文章列表时展示的欢迎卡片
+		welcome?: {
+			// 是否启用欢迎卡片
+			enable?: boolean;
+			// 卡片标题，留空则使用站点标题
+			title?: string;
+			// 卡片正文段落
+			paragraphs?: string[];
+			// 卡片底部快捷链接
+			links?: { name: string; url: string; icon?: string }[];
+		};
+	};
+
 	// 分类导航栏开关
 	categoryBar?: boolean;
 

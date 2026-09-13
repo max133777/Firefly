@@ -49,7 +49,6 @@ export const siteConfig: SiteConfig = {
 
 	// 站点 URL
 	site_url: "https://cuiyingdianzi.com",
-	// site_url: "https://firefly.cuteleaf.cn",
 
 	// 站点描述
 	description:
@@ -140,6 +139,30 @@ export const siteConfig: SiteConfig = {
 	timezone: "Asia/Shanghai",
 
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404并自动隐藏对应的导航栏菜单项
+
+	// ── 首页配置 ──────────────────────────────────
+	// 目前首页不展示文章列表，改为展示欢迎卡片
+	// 需要恢复首页文章列表时，把 showPostList 改为 true 即可
+	home: {
+		showPostList: false,
+		welcome: {
+			enable: true,
+			title: "欢迎来到萃英电子联盟",
+			paragraphs: [
+				"萃英电子联盟是面向电子技术爱好者的学习与实践社区，这里汇集社团的教程、资料与技术分享。",
+				"首页文章列表正在筹备中，你可以先通过下面的入口浏览站点内容，或前往「关于」了解我们。",
+			],
+			links: [
+				{ name: "关于我们", url: "/about/", icon: "material-symbols:info" },
+				{
+					name: "资料归档",
+					url: "/archive/",
+					icon: "material-symbols:menu-book",
+				},
+				{ name: "技术分享", url: "/tags/", icon: "material-symbols:code" },
+			],
+		},
+	},
 
 	// 分类导航栏开关，在首页和归档页顶部显示分类快捷导航
 	categoryBar: true,
@@ -313,9 +336,9 @@ export const siteConfig: SiteConfig = {
 	// ── MyAnimeList配置 ──────────────────────────────────
 	mal: {
 		// MyAnimeList 用户名（列表需为公开状态，私密列表无法读取）
-		username: "cuteleaf",
+		username: "",
 		// MyAnimeList Client ID，在 https://myanimelist.net/apiconfig 注册免费应用后获取
-		clientId: "	0ef34371450f9c6c809deaadec6aa8f3",
+		clientId: "",
 		// MAL API 地址
 		apiUrl: "https://api.myanimelist.net/v2",
 		// 动画条目详情页地址，末尾需要带 /
