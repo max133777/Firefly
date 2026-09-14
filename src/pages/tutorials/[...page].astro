@@ -1,0 +1,108 @@
+---
+import type { GetStaticPaths } from "astro";
+import { Icon } from "astro-icon/components";
+import CoverImage from "@/components/common/CoverImage.astro";
+import Pagination from "@/components/common/Pagination.astro";
+import { profileConfig, siteConfig } from "@/config";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getSortedPosts } from "@/utils/content-utils";
+import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import { getFileDirFromPath, getPostUrlBySlug } from "@/utils/url-utils";
+
+// 教程页：与「技术分享」完全一致的列表样式（一行一篇大卡片 + 分页）
+const PAGE_TITLE = "教程";
+
+export const getStaticPaths = (async ({ paginate }) => {
+	// 注意：getStaticPaths 会被单独打包，这里不能引用组件作用域的变量
+	const listCategory = "教程";
+	const allPosts = await getSortedPosts();
+	const listPosts = allPosts.filter(
+		(post) => (post.data.category || "").trim() === listCategory,
+	);
+	return paginate(listPosts, { pageSize: siteConfig.pagination.postsPerPage });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<MainGridLayout title={PAGE_TITLE} heading={PAGE_TITLE}>
+  {
+    page.data.length === 0 ? (
+      <div class="card-base w-full px-8 py-20 flex items-center justify-center">
+        <span class="text-neutral-500 dark:text-neutral-400 text-lg">暂无</span>
+      </div>
+    ) : (
+      <div class="flex flex-col gap-5">
+        {page.data.map((post) => {
+          const cover = processCoverImageSync(post.data.image, post.id);
+          const apiUrls = getApiUrlList(post.data.image, post.id);
+          const category = (post.data.category || "").trim();
+          return (
+            <a
+              href={getPostUrlBySlug(post.id)}
+              class="card-base group flex flex-col rounded-(--radius-large) overflow-hidden active:scale-[0.995] transition-transform onload-animation"
+            >
+              <div
+                class="relative w-full overflow-hidden bg-black/5 dark:bg-white/5"
+                style="aspect-ratio: 16 / 7;"
+              >
+                {cover ? (
+                  <CoverImage
+                    src={cover}
+                    basePath={getFileDirFromPath(post.filePath || "")}
+                    alt={post.data.title}
+                    class="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                    preview={true}
+                    loading="lazy"
+                    apiUrls={apiUrls}
+                  />
+                ) : (
+                  <div class="w-full h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500">
+                    <Icon name="material-symbols:image-outline" class="text-4xl" />
+                  </div>
+                )}
+              </div>
+              <div class="flex flex-col gap-3 p-5 md:p-7">
+                <h2 class="font-bold text-xl md:text-2xl leading-snug group-hover:text-(--primary) transition-colors">
+                  {post.data.title}
+                </h2>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  {category && (
+                    <span class="inline-flex items-center gap-1 rounded-md bg-(--btn-regular-bg) text-(--primary) px-2 py-0.5 text-xs font-bold">
+                      <Icon name="material-symbols:label-outline-rounded" class="text-sm" />
+                      {category}
+                    </span>
+                  )}
+                  <span class="inline-flex items-center gap-1 min-w-0">
+                    <Icon
+                      name="material-symbols:person-outline-rounded"
+                      class="text-base shrink-0"
+                    />
+                    <span class="truncate">{post.data.author || profileConfig.name}</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <Icon
+                      name="material-symbols:calendar-today-outline-rounded"
+                      class="text-base shrink-0"
+                    />
+                    <span>{formatDateToYYYYMMDD(post.data.published)}</span>
+                  </span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )
+  }
+  {
+    page.total > page.size && (
+      <Pagination
+        class="mx-auto onload-animation mt-5"
+        page={page}
+        style={`animation-delay: calc(var(--content-delay) + ${page.data.length * 50}ms)`}
+      />
+    )
+  }
+</MainGridLayout>

@@ -92,7 +92,7 @@ const handleResultClick = (event: Event, url: string): void => {
 };
 
 // --- Core Search Logic ---
-const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
+const search = async (keyword: string, isDesktop: boolean, immediate = false): Promise<void> => {
 	if (!keyword) {
 		cancelPendingSearch();
 		setPanelVisibility(false, isDesktop);
@@ -133,7 +133,17 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 				isSearching = false;
 			}
 		}
-	}, 300); // 300ms debounce
+	}, immediate ? 0 : 300); // 键盘回车立即搜索，输入时 300ms 防抖
+};
+
+// 回车立即搜索并展开结果面板：搜到就列出来，搜不到显示「无结果」
+const handleSearchKeydown = (event: KeyboardEvent, isDesktop: boolean): void => {
+	if (event.key !== "Enter") return;
+	event.preventDefault();
+	const keyword = (isDesktop ? keywordDesktop : keywordMobile).trim();
+	if (!keyword) return;
+	cancelPendingSearch();
+	void search(keyword, isDesktop, true);
 };
 
 // --- Initialization onMount ---
@@ -192,6 +202,7 @@ $: if (initialized && (keywordMobile || keywordMobile === "")) {
     <input id="search-input-desktop" placeholder="{i18n(I18nKey.search)}" bind:value={keywordDesktop}
            aria-controls="search-panel" data-floating-panel-no-expanded
            on:focus={handleDesktopFocus}
+           on:keydown={(event) => handleSearchKeydown(event, true)}
            class="transition-all pl-10 text-sm bg-transparent outline-0
          h-full w-40 active:w-60 focus:w-60 text-black/50 dark:text-white/50"
     >
@@ -217,6 +228,7 @@ top-20 left-4 md:left-[unset] right-4 shadow-2xl rounded-2xl p-2"
               class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
         <input placeholder={i18n(I18nKey.search)} bind:value={keywordMobile}
                on:focus={requestPagefind}
+               on:keydown={(event) => handleSearchKeydown(event, false)}
                class="pl-10 absolute inset-0 text-sm bg-transparent outline-0
                focus:w-60 text-black/50 dark:text-white/50"
         >
