@@ -1,13 +1,17 @@
 ---
 import type { GetStaticPaths } from "astro";
 import { Icon } from "astro-icon/components";
+import CoverImage from "@/components/common/CoverImage.astro";
 import Pagination from "@/components/common/Pagination.astro";
 import PostPage from "@/components/layout/PostPage.astro";
-import { siteConfig } from "@/config";
+import { profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
+import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import { getFileDirFromPath, getPostUrlBySlug, url } from "@/utils/url-utils";
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
 	// 使用配置中的文章数量
@@ -36,6 +40,18 @@ const showWelcome =
 const welcomeTitle = welcomeConfig.title || siteConfig.title;
 const welcomeParagraphs = welcomeConfig.paragraphs ?? [];
 const welcomeLinks = welcomeConfig.links ?? [];
+
+// 首页「最新文章」区块，见 siteConfig.home.latestPosts
+const latestConfig = homeConfig.latestPosts ?? {};
+const latestCount = Math.max(1, Math.trunc(latestConfig.count ?? 3));
+const latestTitle = latestConfig.title || "最新文章";
+const latestShowMore = latestConfig.showMoreLink !== false;
+// 只在首页第一页展示；条数按 published 倒序由 getSortedPosts 保证
+const showLatest =
+	latestConfig.enable !== false && page.currentPage === 1;
+const latestPosts = showLatest
+	? (await getSortedPosts()).slice(0, latestCount)
+	: [];
 ---
 
 <MainGridLayout heading={heading}>
@@ -68,6 +84,84 @@ const welcomeLinks = welcomeConfig.links ?? [];
           )}
         </div>
       )
+    )
+  }
+  {
+    latestPosts.length > 0 && (
+      <section
+        class="w-full mb-4 onload-animation"
+        style="animation-delay: calc(var(--content-delay) + 80ms)"
+      >
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <h2 class="text-xl md:text-2xl font-bold text-(--primary)">{latestTitle}</h2>
+          {latestShowMore && (
+            <a
+              href={url("/archive/")}
+              class="btn-plain rounded-lg h-9 px-3 inline-flex items-center gap-1 text-sm font-medium shrink-0"
+            >
+              <span>查看全部</span>
+              <Icon name="material-symbols:chevron-right-rounded" class="text-base" />
+            </a>
+          )}
+        </div>
+        <div
+          class="grid gap-4"
+          style="grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));"
+        >
+          {latestPosts.map((post) => {
+            const cover = processCoverImageSync(post.data.image, post.id);
+            const apiUrls = getApiUrlList(post.data.image, post.id);
+            return (
+              <a
+                href={getPostUrlBySlug(post.id)}
+                class="card-base group flex flex-col rounded-(--radius-large) overflow-hidden active:scale-[0.98] transition-transform"
+              >
+                <div
+                  class="relative w-full overflow-hidden bg-black/5 dark:bg-white/5"
+                  style="aspect-ratio: 16 / 9;"
+                >
+                  {cover ? (
+                    <CoverImage
+                      src={cover}
+                      basePath={getFileDirFromPath(post.filePath || "")}
+                      alt={post.data.title}
+                      class="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                      preview={true}
+                      loading="lazy"
+                      apiUrls={apiUrls}
+                    />
+                  ) : (
+                    <div class="w-full h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500">
+                      <Icon name="material-symbols:image-outline" class="text-3xl" />
+                    </div>
+                  )}
+                </div>
+                <div class="flex flex-col gap-2 p-3 md:p-4">
+                  <h3 class="font-bold text-sm md:text-base leading-snug line-clamp-2 group-hover:text-(--primary) transition-colors">
+                    {post.data.title}
+                  </h3>
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                    <span class="inline-flex items-center gap-1 min-w-0">
+                      <Icon
+                        name="material-symbols:person-outline-rounded"
+                        class="text-sm shrink-0"
+                      />
+                      <span class="truncate">{post.data.author || profileConfig.name}</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1">
+                      <Icon
+                        name="material-symbols:calendar-today-outline-rounded"
+                        class="text-sm shrink-0"
+                      />
+                      <span>{formatDateToYYYYMMDD(post.data.published)}</span>
+                    </span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
     )
   }
   {

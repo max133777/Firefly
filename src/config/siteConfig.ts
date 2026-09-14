@@ -145,6 +145,13 @@ export const siteConfig: SiteConfig = {
 	// 需要恢复首页文章列表时，把 showPostList 改为 true 即可
 	home: {
 		showPostList: false,
+		// 首页「最新文章」区块：只展示封面、标题、作者、发布时间
+		latestPosts: {
+			enable: true,
+			count: 3,
+			title: "最新文章",
+			showMoreLink: true,
+		},
 		welcome: {
 			enable: true,
 			title: "欢迎来到萃英电子联盟",

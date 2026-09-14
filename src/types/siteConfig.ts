@@ -103,6 +103,17 @@ export type SiteConfig = {
 	home?: {
 		// 首页是否显示文章列表。设为 false 时首页不渲染文章列表
 		showPostList?: boolean;
+		// 首页"最新文章"区块，展示最近发布的几篇文章（封面 + 标题 + 作者 + 发布时间）
+		latestPosts?: {
+			// 是否启用
+			enable?: boolean;
+			// 展示条数
+			count?: number;
+			// 区块标题
+			title?: string;
+			// 是否显示标题右侧的"查看全部"链接
+			showMoreLink?: boolean;
+		};
 		// 不显示文章列表时展示的欢迎卡片
 		welcome?: {
 			// 是否启用欢迎卡片
