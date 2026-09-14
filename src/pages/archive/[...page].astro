@@ -1,0 +1,39 @@
+---
+import type { GetStaticPaths } from "astro";
+import ArchivePanel from "@components/controls/ArchivePanel.astro";
+import Pagination from "@/components/common/Pagination.astro";
+import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getSortedPostsList } from "@/utils/content-utils";
+
+// 归档页：全量文章按年分组展示，并带分页
+export const getStaticPaths = (async ({ paginate }) => {
+	const allPosts = await getSortedPostsList();
+	return paginate(allPosts, { pageSize: siteConfig.pagination.postsPerPage });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<MainGridLayout title={i18n(I18nKey.archive)} heading={i18n(I18nKey.archive)}>
+  {
+    page.data.length === 0 ? (
+      <div class="card-base w-full px-8 py-20 flex items-center justify-center">
+        <span class="text-neutral-500 dark:text-neutral-400 text-lg">暂无</span>
+      </div>
+    ) : (
+      <ArchivePanel posts={page.data} />
+    )
+  }
+  {
+    page.total > page.size && (
+      <Pagination
+        class="mx-auto onload-animation mt-4"
+        page={page}
+        style={`animation-delay: calc(var(--content-delay) + ${page.data.length * 50}ms)`}
+      />
+    )
+  }
+</MainGridLayout>

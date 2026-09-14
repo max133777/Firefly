@@ -5,9 +5,14 @@ import { i18n } from "@/i18n/translation";
 import { getSortedPostsList } from "@/utils/content-utils";
 import { getPostUrlBySlug, url } from "@/utils/url-utils";
 
-// 归档列表：全量按年分组，服务端渲染。筛选（?tag=/?category=/?uncategorized）
+// 归档列表：按年分组，服务端渲染。筛选（?tag=/?category=/?uncategorized）
 // 与年份折叠由客户端脚本处理——数据本身在构建期已全部就绪。
-const sortedPostsList = await getSortedPostsList();
+// posts 由分页路由传入；不传时退回全量列表（兼容单独使用）
+interface Props {
+	posts?: Awaited<ReturnType<typeof getSortedPostsList>>;
+}
+const { posts: paginatedPosts } = Astro.props;
+const sortedPostsList = paginatedPosts ?? (await getSortedPostsList());
 
 // 严格按发布时间倒序（不受置顶影响），镜像原 Svelte 版行为
 const posts = sortedPostsList

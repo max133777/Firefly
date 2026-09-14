@@ -70,7 +70,12 @@ const {
 
 const isHomePageCheck = isHomePage(Astro.url.pathname);
 const isPostPage = !!postSlug;
-const shouldRenderCategoryBar = !!siteConfig.categoryBar;
+// 分类导航栏：可在配置里限制为只在首页与归档页显示（教程/资料等页面不显示）
+const categoryBarScope = siteConfig.categoryBarScope ?? "home-archive";
+const isArchivePage = Astro.url.pathname.replace(/\/$/, "") === "/archive";
+const categoryBarInScope =
+	categoryBarScope === "all" ? true : isHomePageCheck || isArchivePage;
+const shouldRenderCategoryBar = !!siteConfig.categoryBar && categoryBarInScope;
 const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 
 const banner = getBannerVisibilityState({

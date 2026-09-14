@@ -2,6 +2,7 @@
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
 import { getCategoryList, getSortedPostsList } from "@/utils/content-utils";
 import { url } from "@/utils/url-utils";
 
@@ -13,6 +14,13 @@ const { currentPostCategory } = Astro.props as Props;
 
 const categories = await getCategoryList();
 const totalPosts = (await getSortedPostsList()).length;
+// 额外固定显示的入口（如「教程」「资料」），还没有文章时计数显示 0
+const extraLinks = siteConfig.categoryBarExtra ?? [];
+const extraCategoryNames = new Set(extraLinks.map((item) => item.name));
+// 动态分类里如果已经有同名的，就不再重复展示固定入口
+const visibleCategories = categories.filter(
+	(cat) => !extraCategoryNames.has(cat.name),
+);
 const homeUrl = url("/");
 const archiveUrl = url("/archive/");
 
@@ -74,7 +82,20 @@ function initialActive(categoryName: string): {
       <div class="scroll-fade scroll-fade-left" aria-hidden="true"></div>
       <div class="category-scroll flex gap-2 overflow-x-auto">
         {
-          categories.map((cat) => {
+          extraLinks.map((item) => (
+            <a
+              href={url(item.url)}
+              class="category-pill focus-ring-inset text-sm px-4 py-1.5 whitespace-nowrap
+                     transition-colors duration-150 ease-out flex items-center justify-center"
+              data-category-name={item.name}
+            >
+              {item.name}
+              <span class="pill-count">0</span>
+            </a>
+          ))
+        }
+        {
+          visibleCategories.map((cat) => {
             const active = initialActive(cat.name);
             return (
             <a

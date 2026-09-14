@@ -103,7 +103,7 @@ export type SiteConfig = {
 	home?: {
 		// 首页是否显示文章列表。设为 false 时首页不渲染文章列表
 		showPostList?: boolean;
-		// 首页"最新文章"区块，展示最近发布的几篇文章（封面 + 标题 + 作者 + 发布时间）
+		// 首页"最新文章"区块，展示最近发布的几篇文章（封面 + 标题 + 作者 + 发布时间 + 分类）
 		latestPosts?: {
 			// 是否启用
 			enable?: boolean;
@@ -113,6 +113,8 @@ export type SiteConfig = {
 			title?: string;
 			// 是否显示标题右侧的"查看全部"链接
 			showMoreLink?: boolean;
+			// 是否在卡片底部显示所属分类
+			showCategory?: boolean;
 		};
 		// 不显示文章列表时展示的欢迎卡片
 		welcome?: {
@@ -129,6 +131,12 @@ export type SiteConfig = {
 
 	// 分类导航栏开关
 	categoryBar?: boolean;
+
+	// 分类导航栏显示范围："home-archive"=只在首页与归档页显示，"all"=全站显示
+	categoryBarScope?: "home-archive" | "all";
+
+	// 分类栏中额外固定显示的入口（没有对应文章时计数为 0）
+	categoryBarExtra?: { name: string; url: string }[];
 
 	// 分类导航栏按钮样式："pill"=胶囊，"rectangle"=矩形（配色同胶囊）
 	categoryStyle?: "pill" | "rectangle";

@@ -46,6 +46,7 @@ const latestConfig = homeConfig.latestPosts ?? {};
 const latestCount = Math.max(1, Math.trunc(latestConfig.count ?? 3));
 const latestTitle = latestConfig.title || "最新文章";
 const latestShowMore = latestConfig.showMoreLink !== false;
+const latestShowCategory = latestConfig.showCategory !== false;
 // 只在首页第一页展示；条数按 published 倒序由 getSortedPosts 保证
 const showLatest =
 	latestConfig.enable !== false && page.currentPage === 1;
@@ -111,6 +112,7 @@ const latestPosts = showLatest
           {latestPosts.map((post) => {
             const cover = processCoverImageSync(post.data.image, post.id);
             const apiUrls = getApiUrlList(post.data.image, post.id);
+            const category = (post.data.category || "").trim();
             return (
               <a
                 href={getPostUrlBySlug(post.id)}
@@ -141,6 +143,15 @@ const latestPosts = showLatest
                     {post.data.title}
                   </h3>
                   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                    {latestShowCategory && category && (
+                      <span class="inline-flex items-center gap-0.5 rounded-md bg-(--btn-regular-bg) text-(--primary) px-1.5 py-0.5 font-bold">
+                        <Icon
+                          name="material-symbols:label-outline-rounded"
+                          class="text-xs"
+                        />
+                        {category}
+                      </span>
+                    )}
                     <span class="inline-flex items-center gap-1 min-w-0">
                       <Icon
                         name="material-symbols:person-outline-rounded"

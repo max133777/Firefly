@@ -145,12 +145,13 @@ export const siteConfig: SiteConfig = {
 	// 需要恢复首页文章列表时，把 showPostList 改为 true 即可
 	home: {
 		showPostList: false,
-		// 首页「最新文章」区块：只展示封面、标题、作者、发布时间
+		// 首页「最新文章」区块：展示封面、标题、作者、发布时间与所属分类
 		latestPosts: {
 			enable: true,
 			count: 3,
 			title: "最新文章",
 			showMoreLink: true,
+			showCategory: true,
 		},
 		welcome: {
 			enable: true,
@@ -160,19 +161,32 @@ export const siteConfig: SiteConfig = {
 				"首页文章列表正在筹备中，你可以先通过下面的入口浏览站点内容，或前往「关于」了解我们。",
 			],
 			links: [
-				{ name: "关于我们", url: "/about/", icon: "material-symbols:info" },
+				// 注意：这里的图标不要和导航栏图标重名，否则图标 symbol 会被放进会被 Swup
+				// 替换的正文里，离开首页后导航栏图标会失效
+				{ name: "关于我们", url: "/about/", icon: "material-symbols:groups" },
 				{
 					name: "资料归档",
 					url: "/archive/",
-					icon: "material-symbols:menu-book",
+					icon: "material-symbols:archive-outline-rounded",
 				},
-				{ name: "技术分享", url: "/tags/", icon: "material-symbols:code" },
+				{ name: "技术分享", url: "/share/", icon: "material-symbols:code" },
 			],
 		},
 	},
 
-	// 分类导航栏开关，在首页和归档页顶部显示分类快捷导航
+	// 分类导航栏开关
 	categoryBar: true,
+
+	// 分类导航栏显示范围：
+	// "home-archive"：只在首页和归档页显示（默认，教程/资料/技术分享等页面不显示）
+	// "all"：全站显示
+	categoryBarScope: "home-archive",
+
+	// 分类栏中额外固定显示的入口，即使还没有对应文章也会显示，计数为 0
+	categoryBarExtra: [
+		{ name: "教程", url: "/tutorials/" },
+		{ name: "资料", url: "/resources/" },
+	],
 
 	// 分类导航栏按钮样式
 	// "pill"：胶囊，主题色浅底圆角
