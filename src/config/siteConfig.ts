@@ -167,9 +167,9 @@ export const siteConfig: SiteConfig = {
 				{
 					name: "资料归档",
 					url: "/archive/",
-					icon: "material-symbols:archive-outline-rounded",
+					icon: "material-symbols:folder-copy-outline-rounded",
 				},
-				{ name: "技术分享", url: "/share/", icon: "material-symbols:code" },
+				{ name: "技术分享", url: "/share/", icon: "material-symbols:terminal-rounded" },
 			],
 		},
 	},

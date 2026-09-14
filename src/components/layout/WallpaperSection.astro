@@ -633,3 +633,12 @@ const wallpaperPosition = state.isFullscreenMode
     <div id="banner-dim-container" class="hidden"></div>
 </>
 )}
+
+<style is:global>
+  /* 横幅壁纸：社团 Logo 是方形图，object-cover 会把它放大后裁切（看着很大、且撑出内容）。
+     这里在横幅模式下改为完整显示整张图，图片自然变小、也不会溢出。
+     仅作用于 banner 模式，全屏壁纸不受影响。 */
+  html[data-wallpaper-mode="banner"] #banner-images-container img {
+    object-fit: contain;
+  }
+</style>

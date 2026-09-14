@@ -97,7 +97,8 @@ const { page } = Astro.props;
     )
   }
   {
-    page.total > page.size && (
+    // 分页条常显：只有一页时也显示，方便看到页码
+    (
       <Pagination
         class="mx-auto onload-animation mt-5"
         page={page}
