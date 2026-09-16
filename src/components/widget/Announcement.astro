@@ -27,9 +27,9 @@ const showTitle = widgetConfig?.showTitle !== false;
   style={style}
 >
   <div>
-    <!-- 公告栏内容 -->
+    <!-- 公告栏内容：允许在 announcementConfig.ts 里写 HTML（例如多个链接） -->
     <div class="text-neutral-600 dark:text-neutral-300 leading-relaxed mb-3">
-      {config.content}
+      <Fragment set:html={config.content} />
     </div>
 
     <!-- 可选链接和关闭按钮 -->

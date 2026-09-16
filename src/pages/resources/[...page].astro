@@ -27,6 +27,42 @@ const { page } = Astro.props;
 ---
 
 <MainGridLayout title={PAGE_TITLE} heading={PAGE_TITLE}>
+  <!-- 置顶：官方账号（固定在资料页最上方） -->
+  <div class="card-base w-full px-6 py-5 md:px-8 md:py-6 mb-5">
+    <div class="flex items-center gap-2 mb-3">
+      <span
+        class="rounded-md bg-(--btn-regular-bg) text-(--primary) px-2 py-0.5 text-xs font-bold"
+        >置顶</span
+      >
+      <h2 class="font-bold text-lg text-(--primary)">官方账号</h2>
+    </div>
+    <ul class="flex flex-col gap-2 text-neutral-700 dark:text-neutral-300">
+      <li class="flex flex-wrap items-center gap-1">
+        <span class="font-medium">bilibili：</span>
+        <a
+          class="transition link text-(--primary) font-medium inline-flex items-center gap-1"
+          href="https://space.bilibili.com/670495028?spm_id_from=333.1365.0.0"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          max133777
+          <Icon name="fa7-solid:arrow-up-right-from-square" class="text-[0.75rem]" />
+        </a>
+      </li>
+      <li class="flex flex-wrap items-center gap-1">
+        <span class="font-medium">立创开源硬件平台：</span>
+        <a
+          class="transition link text-(--primary) font-medium inline-flex items-center gap-1"
+          href="https://oshwhub.com/max1337?jlc_vid=T1laVwZRR1RYUABSFAVcVlNeT1dWUVIDFlgNBAJREVkxVlNeTlRdX1xWQ1BWVjtWKA4dDxMOAgNABAsL"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          max1337
+          <Icon name="fa7-solid:arrow-up-right-from-square" class="text-[0.75rem]" />
+        </a>
+      </li>
+    </ul>
+  </div>
   {
     page.data.length === 0 ? (
       <div class="card-base w-full px-8 py-20 flex items-center justify-center">
