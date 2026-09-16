@@ -15,3 +15,4 @@
 
 - bilibili：[max133777](https://space.bilibili.com/670495028?spm_id_from=333.1365.0.0)
 - 立创开源硬件平台：[max1337](https://oshwhub.com/max1337?jlc_vid=T1laVwZRR1RYUABSFAVcVlNeT1dWUVIDFlgNBAJREVkxVlNeTlRdX1xWQ1BWVjtWKA4dDxMOAgNABAsL)
+- 社团仓库：[萃英电子联盟](https://gitcode.com/cyea)
