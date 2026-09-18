@@ -22,7 +22,9 @@ const posts = sortedPostsList
 // 按年份分组
 const grouped = new Map<number, typeof posts>();
 for (const post of posts) {
-	const year = post.data.published.getFullYear();
+	// 注意：主题的时间是「UTC 朴素时间」约定（文章卡片、动态页都用 UTC 渲染），
+	// 这里也必须用 UTC 取年份，否则晚上发布（UTC+8 会跨天）的文章会被归到第二天/第二年
+	const year = post.data.published.getUTCFullYear();
 	if (!grouped.has(year)) grouped.set(year, []);
 	grouped.get(year)?.push(post);
 }
@@ -35,8 +37,9 @@ const foldArticle = siteConfig.foldArticle !== false;
 const collapseAllButFirst = foldArticle && groups.length > 1;
 
 function formatDate(date: Date) {
-	const month = (date.getMonth() + 1).toString().padStart(2, "0");
-	const day = date.getDate().toString().padStart(2, "0");
+	// 同上：与卡片/动态保持一致，统一按 UTC 显示月日
+	const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+	const day = date.getUTCDate().toString().padStart(2, "0");
 	return `${month}-${day}`;
 }
 
