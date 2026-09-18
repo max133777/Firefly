@@ -1,6 +1,6 @@
 ---
 title: 在泰山派（RK3566）上部署原版 YOLOv5 模型
-published: 2026-09-14
+published: 2026-09-14T14:00:00Z
 description: 从 yolov5n.pt 导出 320×320 的 ONNX，在 x86 Linux 上用 RKNN-Toolkit2 做 int8 量化；遇到 sigmoid 输出被量化成 int8 导致置信度全为 0，改用混合量化解决，最后部署到泰山派（RK3566）上实测推理。
 image: ./board.jpg
 tags: [RK3566, 泰山派, YOLOv5, RKNN, 模型量化, 嵌入式AI]

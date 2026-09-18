@@ -14,10 +14,13 @@ async function getRawSortedPosts() {
 		if (a.data.pinned && !b.data.pinned) return -1;
 		if (!a.data.pinned && b.data.pinned) return 1;
 
-		// 如果置顶状态相同，则按发布日期排序
+		// 如果置顶状态相同，则按发布日期排序（新的在前）
+		// 日期完全相同时用 id 兜底，保证每次构建顺序稳定、不会随机
 		const dateA = new Date(a.data.published);
 		const dateB = new Date(b.data.published);
-		return dateA > dateB ? -1 : 1;
+		if (dateA > dateB) return -1;
+		if (dateA < dateB) return 1;
+		return a.id.localeCompare(b.id);
 	});
 	return sorted;
 }
