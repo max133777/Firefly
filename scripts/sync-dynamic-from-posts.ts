@@ -39,7 +39,9 @@ function formatDateTime(value: unknown): string {
 	const date = value instanceof Date ? value : new Date(String(value));
 	if (Number.isNaN(date.getTime())) return "";
 	const pad = (n: number) => String(n).padStart(2, "0");
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+	// 注意：必须用 UTC getter。文章 frontmatter 的无时区时间会被按 UTC 解析，
+	// 若这里用本地 getter（本机为 UTC+8），时间带时分时会跨天，动态日期就会串到第二天。
+	return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
 }
 
 /** 生成动态正文：一句话 + 文章链接 */
