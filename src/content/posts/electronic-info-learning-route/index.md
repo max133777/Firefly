@@ -270,6 +270,8 @@ C语言---不要买谭浩强那本红书，纯垃圾，建议C primer plus
 
 ![](./image-6.jpg)
 
+<https://www.bilibili.com/video/BV1Mb411e7re/?spm_id_from=333.1387.upload.video_card.click>
+
 传世经典
 
 买一块普中科技的51单片机开发板
@@ -283,6 +285,8 @@ C语言---不要买谭浩强那本红书，纯垃圾，建议C primer plus
 stm32的教程也可以看他的，看你是否有基础或者能力，如果什么都不会，建议先学完51单片机，再学stm32
 
 ![](./image-8.jpg)
+
+<https://www.bilibili.com/video/BV1th411z7sn/?spm_id_from=333.1387.upload.video_card.click>
 
 传世经典
 
