@@ -123,8 +123,8 @@ const postUrlPrefix = url("/posts/");
 
 <script is:inline data-swup-ignore-script define:vars={{ monthNames, weekDays, yearText, currentLang, calendarDataUrl, postUrlPrefix, heatmapWeekTemplate }}>
   // State variables
-  let displayYear = new Date().getFullYear();
-  let displayMonth = new Date().getMonth();
+  let displayYear = new Date().getUTCFullYear();
+  let displayMonth = new Date().getUTCMonth();
   let currentView = 'day'; // 'day' | 'month' | 'year'
   let postDateMap = {};
   let allPostsData = [];
@@ -146,12 +146,12 @@ const postUrlPrefix = url("/posts/");
       const yearsSet = new Set();
       allPostsData.forEach(post => {
         const date = new Date(post.published);
-        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
         if (!postDateMap[dateKey]) {
           postDateMap[dateKey] = [];
         }
         postDateMap[dateKey].push({ id: post.id, title: post.title, published: post.published });
-        yearsSet.add(date.getFullYear());
+        yearsSet.add(date.getUTCFullYear());
       });
       
       availableYears = Array.from(yearsSet).sort((a, b) => b - a);
@@ -181,9 +181,9 @@ const postUrlPrefix = url("/posts/");
     const heatmapData = Array.from({ length: 12 }, () => [0, 0, 0, 0]);
     allPostsData.forEach(post => {
       const date = new Date(post.published);
-      if (date.getFullYear() !== displayYear) return;
-      const month = date.getMonth();
-      const day = date.getDate();
+      if (date.getUTCFullYear() !== displayYear) return;
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
       const week = Math.min(Math.floor((day - 1) / 7), 3); // 0-3
       heatmapData[month][week]++;
     });
@@ -304,7 +304,7 @@ const postUrlPrefix = url("/posts/");
 
     if (resetBtn) {
       const now = new Date();
-      const isCurrent = displayYear === now.getFullYear() && displayMonth === now.getMonth();
+      const isCurrent = displayYear === now.getUTCFullYear() && displayMonth === now.getUTCMonth();
       resetBtn.style.display = (currentView === 'day' && isCurrent) ? 'none' : 'flex';
     }
     
@@ -317,8 +317,8 @@ const postUrlPrefix = url("/posts/");
     const now = new Date();
     const currentYear = displayYear;
     const currentMonth = displayMonth;
-    const currentDate = now.getDate();
-    const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
+    const currentDate = now.getUTCDate();
+    const isCurrentMonth = currentYear === now.getUTCFullYear() && currentMonth === now.getUTCMonth();
     
     // 获取月份的第一天是星期几
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -385,7 +385,7 @@ const postUrlPrefix = url("/posts/");
     // 获取当月所有文章
     const currentMonthPosts = allPostsData.filter(post => {
       const date = new Date(post.published);
-      return date.getFullYear() === currentYear && date.getMonth() === currentMonth;
+      return date.getUTCFullYear() === currentYear && date.getUTCMonth() === currentMonth;
     });
     
     // 显示当月文章列表
@@ -403,8 +403,8 @@ const postUrlPrefix = url("/posts/");
     const monthsWithPosts = new Set();
     allPostsData.forEach(post => {
         const date = new Date(post.published);
-        if (date.getFullYear() === displayYear) {
-            monthsWithPosts.add(date.getMonth());
+        if (date.getUTCFullYear() === displayYear) {
+            monthsWithPosts.add(date.getUTCMonth());
         }
     });
 
@@ -473,7 +473,7 @@ const postUrlPrefix = url("/posts/");
     if (postsList) {
       postsList.innerHTML = currentMonthPosts.map(post => {
         const date = new Date(post.published);
-        const dateStr = `${date.getMonth() + 1}-${date.getDate()}`;
+        const dateStr = `${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
         return `
         <a href="${postUrlPrefix}${post.id}/" class="flex justify-between items-center text-sm text-neutral-700 dark:text-neutral-300 hover:text-(--primary) dark:hover:text-(--primary) transition-colors px-2 py-1 rounded-sm hover:bg-(--btn-plain-bg-hover)">
           <span class="truncate">${post.title}</span>
@@ -533,7 +533,7 @@ const postUrlPrefix = url("/posts/");
           // 渲染文章列表
           postsList.innerHTML = posts.map(post => {
             const date = new Date(post.published);
-            const dateStr = `${date.getMonth() + 1}-${date.getDate()}`;
+            const dateStr = `${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
             return `
             <a href="${postUrlPrefix}${post.id}/" class="flex justify-between items-center text-sm text-neutral-700 dark:text-neutral-300 hover:text-(--primary) dark:hover:text-(--primary) transition-colors px-2 py-1 rounded-sm hover:bg-(--btn-plain-bg-hover)">
               <span class="truncate">${post.title}</span>
@@ -568,8 +568,8 @@ const postUrlPrefix = url("/posts/");
 
   function resetToToday() {
       const now = new Date();
-      displayYear = now.getFullYear();
-      displayMonth = now.getMonth();
+      displayYear = now.getUTCFullYear();
+      displayMonth = now.getUTCMonth();
       currentView = 'day';
       renderCalendar();
   }
@@ -577,8 +577,8 @@ const postUrlPrefix = url("/posts/");
   function initCalendar() {
       // Reset to current date on init
       const now = new Date();
-      displayYear = now.getFullYear();
-      displayMonth = now.getMonth();
+      displayYear = now.getUTCFullYear();
+      displayMonth = now.getUTCMonth();
       
       fetchData();
       

@@ -5,7 +5,7 @@ description: 自制 MSPM0G3519 开发板的踩坑记录：CCS Theia 工程配置
 image: ./image-1.jpg
 tags: [MSPM0G3519, MSPM0G3507, CCS, CCS Theia, UniFlash, 单片机, 锁板]
 category: 技术分享
-author: huns_rundle
+author: max1337
 slug: mspm0g3519-dev-and-unlock
 sourceLink: https://gitcode.com/cyea/mspm0_example
 draft: false

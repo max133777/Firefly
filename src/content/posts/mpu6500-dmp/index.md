@@ -5,7 +5,7 @@ description: MPU6050 停产后改用 MPU6500，记录把 InvenSense motion_drive
 image: ./image-9.jpg
 tags: [MPU6500, MPU6050, DMP, STM32, 姿态解算, I2C]
 category: 技术分享
-author: huns_rundle
+author: max1337
 slug: mpu6500-dmp-attitude
 sourceLink: https://gitee.com/Hans_Rudle/mpu6500_dmp
 draft: false

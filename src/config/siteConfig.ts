@@ -146,9 +146,10 @@ export const siteConfig: SiteConfig = {
 	home: {
 		showPostList: false,
 		// 首页「最新文章」区块：展示封面、标题、作者、发布时间与所属分类
+		// count 设为 16，配合下面的 4 列网格，最多可显示 4 行 × 4 个
 		latestPosts: {
 			enable: true,
-			count: 3,
+			count: 16,
 			title: "最新文章",
 			showMoreLink: true,
 			showCategory: true,

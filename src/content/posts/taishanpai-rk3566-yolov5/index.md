@@ -5,7 +5,7 @@ description: 从 yolov5n.pt 导出 320×320 的 ONNX，在 x86 Linux 上用 RKNN
 image: ./board.jpg
 tags: [RK3566, 泰山派, YOLOv5, RKNN, 模型量化, 嵌入式AI]
 category: 技术分享
-author: huns_rundle
+author: max1337
 slug: taishanpai-rk3566-yolov5-deploy
 draft: false
 ---
