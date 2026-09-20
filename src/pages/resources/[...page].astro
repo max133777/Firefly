@@ -4,6 +4,8 @@ import { Icon } from "astro-icon/components";
 import CoverImage from "@/components/common/CoverImage.astro";
 import Pagination from "@/components/common/Pagination.astro";
 import { profileConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
@@ -95,6 +97,12 @@ const { page } = Astro.props;
                 class="relative w-full overflow-hidden bg-black/5 dark:bg-white/5"
                 style="aspect-ratio: 16 / 7;"
               >
+                {post.data.pinned && (
+                  <div class="absolute top-2 left-2 z-10 inline-flex items-center gap-1 rounded-md bg-(--primary) text-white px-2 py-0.5 text-xs font-bold shadow-sm pointer-events-none">
+                    <Icon name="material-symbols:pinboard" class="text-sm" />
+                    <span>{i18n(I18nKey.pinned)}</span>
+                  </div>
+                )}
                 {cover ? (
                   <CoverImage
                     src={cover}
