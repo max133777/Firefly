@@ -1,0 +1,98 @@
+---
+import { Icon } from "astro-icon/components";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+
+const steps = [
+	{
+		icon: "material-symbols:edit-document-outline-rounded",
+		title: "1. 准备好你的稿件",
+		body: "支持三种格式：Markdown（.md）、Word（.docx）、LaTeX（.tex）。Word 和 LaTeX 都会自动转成站点使用的 Markdown，公式会自动转成 KaTeX 语法。",
+	},
+	{
+		icon: "material-symbols:terminal-rounded",
+		title: "2. 跑一条命令，自动规范化",
+		body: "转换 + 图片落地 + 生成文章目录和 frontmatter 一次完成。",
+		code: `git clone https://github.com/max133777/Firefly.git
+cd Firefly
+pnpm install
+pnpm submit 你的稿件.docx --category 技术分享 --author 你的名字`,
+	},
+	{
+		icon: "material-symbols:cloud-upload-outline-rounded",
+		title: "3. 提 PR 投稿",
+		body: "推到自己的分支并开 Pull Request。CI 会自动校验文章格式、跑 astro check 和构建，全绿才算合格。",
+		code: `git checkout -b post/我的文章
+git add src/content/posts/我的文章
+git commit -m "post: 文章标题"
+git push -u origin post/我的文章`,
+	},
+	{
+		icon: "material-symbols:verified-outline-rounded",
+		title: "4. 审核与发布",
+		body: "社团负责人（max1337）在 PR 里审核，必要时提出修改意见；合并到主分支后网站自动部署上线。",
+	},
+];
+
+const rules = [
+	"分类只能是「技术分享」「教程」「资料」三者之一",
+	"图片要放在文章目录里，正文用 ./image-1.png 这种相对路径引用",
+	"代码请用围栏代码块（```语言）",
+	"不要提交草稿状态的内容；有疑问先在 PR 里讨论",
+];
+---
+
+<MainGridLayout title="投稿" heading="投稿">
+  <div class="card-base w-full px-6 py-6 md:px-9 md:py-8 mb-4">
+    <h2 class="text-2xl md:text-3xl font-bold text-(--primary) mb-4">向萃英电子联盟投稿</h2>
+    <p class="text-neutral-700 dark:text-neutral-300 leading-relaxed mb-3">
+      欢迎分享你的电子技术笔记、教程、资料整理。投稿走 GitHub Pull Request 流程：
+      <strong>你提交 → CI 自动校验 → 社团负责人审核 → 合并后自动上线</strong>。
+      不用注册本站账号，也不需要服务器后台。
+    </p>
+    <p class="text-neutral-700 dark:text-neutral-300 leading-relaxed">
+      仓库地址：<a
+        class="transition link text-(--primary) font-medium"
+        href="https://github.com/max133777/Firefly"
+        target="_blank"
+        rel="noopener noreferrer">github.com/max133777/Firefly</a
+      >
+    </p>
+  </div>
+
+  <div class="flex flex-col gap-4">
+    {
+      steps.map((step) => (
+        <div class="card-base w-full px-6 py-5 md:px-8 md:py-6">
+          <div class="flex items-center gap-2 mb-2">
+            <Icon name={step.icon} class="text-(--primary) text-xl" />
+            <h3 class="font-bold text-lg text-(--primary)">{step.title}</h3>
+          </div>
+          <p class="text-neutral-700 dark:text-neutral-300 leading-relaxed">{step.body}</p>
+          {step.code && (
+            <pre class="mt-3 rounded-lg bg-black/5 dark:bg-white/5 p-4 overflow-x-auto text-sm leading-relaxed">
+              <code>{step.code}</code>
+            </pre>
+          )}
+        </div>
+      ))
+    }
+
+    <div class="card-base w-full px-6 py-5 md:px-8 md:py-6">
+      <div class="flex items-center gap-2 mb-3">
+        <Icon name="material-symbols:rule-rounded" class="text-(--primary) text-xl" />
+        <h3 class="font-bold text-lg text-(--primary)">格式要求</h3>
+      </div>
+      <ul class="flex flex-col gap-2 text-neutral-700 dark:text-neutral-300">
+        {rules.map((rule) => (
+          <li class="flex items-start gap-2">
+            <span class="mt-2 w-1.5 h-1.5 rounded-full bg-(--primary) shrink-0" />
+            <span>{rule}</span>
+          </li>
+        ))}
+      </ul>
+      <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-4">
+        本地自查：<code class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">pnpm validate:posts</code>
+      </p>
+    </div>
+  </div>
+</MainGridLayout>

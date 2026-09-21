@@ -1,0 +1,71 @@
+name: Validate post submission
+
+# 有人投 PR（投稿）时自动跑：文章格式校验 + astro check + 构建
+# 全绿才允许合并；合并到 master 后由 Cloudflare 自动部署。
+
+on:
+  pull_request:
+    paths:
+      - "src/content/posts/**"
+      - "scripts/**"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: 校验文章格式（frontmatter / 分类 / 图片引用）
+        run: node scripts/validate-posts.mjs
+
+      - name: astro check
+        run: pnpm check
+
+      - name: 生产构建
+        run: pnpm build
+
+      - name: 失败时在 PR 里留言
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              "❌ 投稿校验没通过，请按上面的日志修正后重新 push。",
+              "",
+              "常见原因：",
+              "- frontmatter 缺 `title` / `published` / `category` / `author` / `slug`",
+              "- `category` 不是 `技术分享` / `教程` / `资料` 之一",
+              "- 正文图片路径不是 `./image-N.png` 形式，或图片文件没一起提交",
+              "- 文章目录里有没被正文引用的图片",
+              "",
+              "本地自查：`node scripts/validate-posts.mjs`",
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
