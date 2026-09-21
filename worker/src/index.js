@@ -287,6 +287,8 @@ ${body}
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
+		// 路径归一化：/api/mine/ 与 //api/mine 都按 /api/mine 处理（浏览器/地址栏常补末尾斜杠）
+		const path = url.pathname.replace(/\/+$/, "") || "/";
 		const origin = cors(env, request);
 		if (request.method === "OPTIONS") return json({}, 200, origin);
 
@@ -301,7 +303,7 @@ export default {
 
 		try {
 			// ---------- 投稿 ----------
-			if (url.pathname === "/api/submit" && request.method === "POST") {
+			if (path === "/api/submit" && request.method === "POST") {
 				const form = await request.formData();
 				const md = form.get("md");
 				const author = String(form.get("author") || "").trim();
@@ -376,7 +378,7 @@ export default {
 			}
 
 			// ---------- 我的投稿 ----------
-			if (url.pathname === "/api/mine" && request.method === "GET") {
+			if (path === "/api/mine" && request.method === "GET") {
 				const submitter = url.searchParams.get("submitter") || "";
 				const list = await env.SUBMISSIONS.list({ prefix: "sub:" });
 				const items = [];
@@ -389,8 +391,8 @@ export default {
 			}
 
 			// ---------- 文件（预览用）----------
-			if (url.pathname.startsWith("/api/file/")) {
-				const rest = url.pathname.slice("/api/file/".length);
+			if (path.startsWith("/api/file/")) {
+				const rest = path.slice("/api/file/".length);
 				const slash = rest.indexOf("/");
 				const id = rest.slice(0, slash);
 				const name = decodeURIComponent(rest.slice(slash + 1));
@@ -407,7 +409,7 @@ export default {
 			}
 
 			// ---------- 审核：列表 ----------
-			if (url.pathname === "/api/admin/list" && request.method === "POST") {
+			if (path === "/api/admin/list" && request.method === "POST") {
 				if (!isAdmin(request)) return json({ ok: false, error: "无权限" }, 401, origin);
 				const body = await request.json().catch(() => ({}));
 				const want = body.status || "pending";
@@ -422,7 +424,7 @@ export default {
 			}
 
 			// ---------- 审核：通过 / 不通过 ----------
-			if (url.pathname === "/api/admin/review" && request.method === "POST") {
+			if (path === "/api/admin/review" && request.method === "POST") {
 				if (!isAdmin(request)) return json({ ok: false, error: "无权限" }, 401, origin);
 				const { id, action, reason } = await request.json();
 				const raw = await env.SUBMISSIONS.get(`sub:${id}`);
@@ -454,7 +456,19 @@ export default {
 				return json({ ok: true, item: rec }, 200, origin);
 			}
 
-			return json({ ok: false, error: "not found" }, 404, origin);
+			if (path === "/") {
+				return json(
+					{
+						ok: true,
+						service: "cyea-submit",
+						hint: "POST /api/submit 投稿；GET /api/mine?submitter=… 查自己的投稿；POST /api/admin/list 审核列表",
+					},
+					200,
+					origin,
+				);
+			}
+
+			return json({ ok: false, error: "not found", path }, 404, origin);
 		} catch (error) {
 			return json({ ok: false, error: String(error?.message || error) }, 500, origin);
 		}
