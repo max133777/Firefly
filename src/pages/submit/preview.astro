@@ -1,0 +1,126 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { submitConfig } from "@/config/submitConfig";
+---
+
+<MainGridLayout title="正文预览" heading="正文预览">
+  <div class="card-base w-full px-6 py-6 md:px-9 md:py-8 mb-4" id="preview-root">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <h2 class="text-xl md:text-2xl font-bold text-(--primary)" id="pv-title">正文预览</h2>
+      <a href="/submit/" class="btn-plain rounded-lg h-9 px-3 text-sm font-bold">← 返回审核列表</a>
+    </div>
+    <p id="pv-meta" class="text-sm text-neutral-500 dark:text-neutral-400 mb-4"></p>
+    <div id="pv-status" class="text-sm text-neutral-500 dark:text-neutral-400">加载中…</div>
+    <article id="pv-body" class="prose dark:prose-invert max-w-none hidden"></article>
+  </div>
+</MainGridLayout>
+
+<!-- 站点自带的 marked（UMD，挂在 window.marked） -->
+<script is:inline src="/assets/js/marked.min.js" data-swup-ignore-script></script>
+
+<script is:inline define:vars={{ API_BASE: submitConfig.apiBase }} data-swup-ignore-script>
+  (function () {
+    var STATUS_TEXT = { pending: "待审核", approved: "已通过", rejected: "未通过" };
+    var $ = function (s) {
+      return document.querySelector(s);
+    };
+    var setStatus = function (text, cls) {
+      var el = $("#pv-status");
+      if (!el) return;
+      el.className = "text-sm " + (cls || "text-neutral-500 dark:text-neutral-400");
+      el.textContent = text;
+      el.classList.remove("hidden");
+    };
+    var b64 = function (s) {
+      return btoa(String.fromCharCode.apply(null, new TextEncoder().encode(s)));
+    };
+
+    function boot() {
+      var root = document.getElementById("preview-root");
+      if (!root || root.dataset.booted === "1") return;
+      root.dataset.booted = "1";
+
+      var id = new URLSearchParams(location.search).get("id") || "";
+      if (!id) {
+        setStatus("缺少 id 参数。请从审核列表点「查看正文完整预览」进入。", "text-red-500");
+        return;
+      }
+      var token = localStorage.getItem("cyea-admin-token") || "";
+      if (!token) {
+        setStatus("未检测到审核口令，请先打开 /submit/?admin=1 输入口令，再回来刷新本页。", "text-red-500");
+        return;
+      }
+      if (!window.marked) {
+        setStatus("Markdown 渲染器没加载成功，请刷新本页重试。", "text-red-500");
+        return;
+      }
+
+      fetch(API_BASE + "/api/admin/list", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-admin-token": b64(token) },
+        body: JSON.stringify({ status: "all" }),
+      })
+        .then(function (r) {
+          return r.json().then(function (d) {
+            if (!r.ok || !d.ok) throw new Error(d.error || "HTTP " + r.status);
+            return d;
+          });
+        })
+        .then(function (data) {
+          var item = (data.items || []).filter(function (x) {
+            return x.id === id;
+          })[0];
+          if (!item) throw new Error("找不到这条投稿");
+
+          $("#pv-title").textContent = item.title || "(无标题)";
+          $("#pv-meta").textContent =
+            item.author +
+            " · " +
+            (item.categories || []).join(" / ") +
+            " · " +
+            new Date(item.createdAt).toLocaleString() +
+            " · 状态 " +
+            (STATUS_TEXT[item.status] || item.status);
+
+          return fetch(
+            API_BASE + "/api/file/" + item.id + "/" + encodeURIComponent(item.mdName),
+          ).then(function (mdRes) {
+            if (!mdRes.ok) throw new Error("读取正文失败 HTTP " + mdRes.status);
+            return mdRes.text().then(function (md) {
+              return { item: item, md: md };
+            });
+          });
+        })
+        .then(function (r) {
+          var md = r.md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+          var body = $("#pv-body");
+          body.innerHTML = window.marked.parse(md, { gfm: true });
+
+          var imgs = body.querySelectorAll("img");
+          for (var i = 0; i < imgs.length; i++) {
+            var src = imgs[i].getAttribute("src") || "";
+            if (/^https?:\/\//i.test(src) || src.indexOf("data:") === 0) continue;
+            var name = decodeURIComponent(src).split("/").pop() || "";
+            imgs[i].setAttribute(
+              "src",
+              API_BASE + "/api/file/" + r.item.id + "/" + encodeURIComponent(name),
+            );
+            imgs[i].setAttribute("loading", "lazy");
+            imgs[i].className += " rounded-lg mx-auto";
+          }
+
+          $("#pv-status").classList.add("hidden");
+          body.classList.remove("hidden");
+          document.title = (r.item.title || "正文") + " · 正文预览";
+        })
+        .catch(function (e) {
+          setStatus("加载失败：" + (e && e.message ? e.message : String(e)), "text-red-500");
+        });
+    }
+
+    boot();
+    // Swup 站内跳转时内联脚本不会重跑，补一次初始化
+    document.addEventListener("swup:contentReplaced", boot);
+    document.addEventListener("firefly:page:loaded", boot);
+  })();
+</script>

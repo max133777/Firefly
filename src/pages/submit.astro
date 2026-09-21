@@ -18,7 +18,7 @@ import { submitConfig } from "@/config/submitConfig";
     <div id="cfg-warn" class="hidden mt-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 px-3 py-2 text-sm"></div>
   </div>
 
-  <div class="card-base w-full px-4 py-4 md:px-6 md:py-5">
+  <div class="card-base w-full px-4 py-4 md:px-6 md:py-5" id="submit-root">
     <!-- 分栏 -->
     <div class="flex flex-wrap gap-2 mb-5" id="tabs">
       <button data-tab="submit" class="tab-btn btn-regular rounded-lg h-10 px-4 font-bold">我要投稿</button>
@@ -165,6 +165,11 @@ import { submitConfig } from "@/config/submitConfig";
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const api = (p) => `${API_BASE}${p}`;
+
+  function bootSubmitPage() {
+    const root = document.getElementById("submit-root");
+    if (!root || root.dataset.booted === "1") return;
+    root.dataset.booted = "1";
 
   // 本站后端是否已部署
   if (!API_BASE) {
@@ -430,17 +435,19 @@ import { submitConfig } from "@/config/submitConfig";
       box.innerHTML = data.items
         .map((it) => {
           const st = STATUS[it.status] || STATUS.pending;
-          const imgs = it.files
-            .map((n) => `<img src="${api(`/api/file/${it.id}/${encodeURIComponent(n)}`)}" class="h-24 rounded-md border border-(--line-divider)" loading="lazy" />`)
-            .join("");
           return `<div class="rounded-lg border border-(--line-divider) p-3" data-id="${it.id}">
             <div class="flex flex-wrap items-center gap-2 mb-2">
               <span class="font-bold">${esc(it.title)}</span>
               <span class="text-xs px-2 py-0.5 rounded-md ${st.cls}">${st.text}</span>
               <span class="text-xs text-neutral-500">${esc(it.author)} · ${esc(it.categories.join(" / "))} · ${new Date(it.createdAt).toLocaleString()}</span>
             </div>
-            <div class="flex flex-wrap gap-2 mb-2">${imgs}</div>
-            <div class="text-sm text-neutral-600 dark:text-neutral-300 mb-2">${esc(it.description || "")}</div>
+            <a
+              class="inline-flex items-center gap-1 text-sm font-bold link text-(--primary) mb-2"
+              href="/submit/preview/?id=${encodeURIComponent(it.id)}"
+              target="_blank"
+              rel="noopener"
+              >查看正文完整预览 ↗</a
+            >
             <div class="flex flex-wrap gap-2">
               <button class="btn-regular rounded-lg h-9 px-3 text-sm font-bold" data-act="approve">审核通过</button>
               <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-act="reject">不通过</button>
@@ -516,4 +523,11 @@ import { submitConfig } from "@/config/submitConfig";
   );
 
   showTab(adminQuery ? "review" : "submit");
+  }
+
+  bootSubmitPage();
+  // Swup 站内切页时 <script> 不会重新执行，导致分栏点不动、审核按钮不显示；
+  // 这里在页面替换后再初始化一次（靠 submit-root 上的标记保证只初始化一次）
+  document.addEventListener("swup:contentReplaced", bootSubmitPage);
+  document.addEventListener("firefly:page:loaded", bootSubmitPage);
 </script>
