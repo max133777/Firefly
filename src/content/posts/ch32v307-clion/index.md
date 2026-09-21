@@ -5,7 +5,7 @@ description: 借 MounRiver Studio 自带的 RISC-V 工具链和 OpenOCD，把 CH
 image: ./image-8.png
 tags: [CH32V307, RISC-V, CLion, MounRiver, 开发环境]
 category: 技术分享
-author: huns_rundle
+author: hans_rudle
 slug: ch32v307-clion-setup
 draft: false
 ---
