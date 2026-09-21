@@ -361,9 +361,14 @@ export default {
 				const id = rest.slice(0, slash);
 				const name = decodeURIComponent(rest.slice(slash + 1));
 				const obj = await storeGet(env, `sub/${id}/${name}`);
-				if (!obj) return new Response("not found", { status: 404 });
+				if (!obj) return new Response("not found", { status: 404, headers: { "access-control-allow-origin": origin } });
+				// 预览页要用 fetch() 取正文/图片，必须带 CORS 头，否则浏览器报 Failed to fetch
 				return new Response(obj.body, {
-					headers: { "content-type": obj.httpMetadata?.contentType || "application/octet-stream" },
+					headers: {
+						"content-type": obj.httpMetadata?.contentType || "application/octet-stream",
+						"access-control-allow-origin": origin,
+						"cache-control": "private, max-age=60",
+					},
 				});
 			}
 

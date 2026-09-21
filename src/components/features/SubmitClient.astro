@@ -1,0 +1,376 @@
+---
+// 投稿页的客户端逻辑：放在这里并挂到 MainGridLayout 上「每页都渲染」，
+// 这样无论整页加载还是 Swup 站内切页，脚本都已经注册好，
+// 不会出现「进投稿页后审核按钮不显示、分栏点不动，刷新才好」的问题。
+import { submitConfig } from "@/config/submitConfig";
+---
+
+<script is:inline define:vars={{ API_BASE: submitConfig.apiBase, CATEGORIES: submitConfig.categories }}>
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const api = (p) => `${API_BASE}${p}`;
+
+  function bootSubmitPage() {
+    const root = document.getElementById("submit-root");
+    if (!root || root.dataset.booted === "1") return;
+    root.dataset.booted = "1";
+
+  // 本站后端是否已部署
+  if (!API_BASE) {
+    const w = $("#cfg-warn");
+    w.classList.remove("hidden");
+    w.textContent = "投稿后端（Cloudflare Worker）尚未部署，提交功能暂不可用；部署后把地址填进 src/config/submitConfig.ts 的 apiBase 即可。";
+  }
+
+  // 设备标识：用于「我的投稿」（不涉及账号）
+  const deviceId = (() => {
+    let id = localStorage.getItem("cyea-submitter-id");
+    if (!id) {
+      id = "d-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      localStorage.setItem("cyea-submitter-id", id);
+    }
+    return id;
+  })();
+
+  // ---------- 分栏 ----------
+  function showTab(name) {
+    $$("[data-panel]").forEach((p) => {
+      p.classList.toggle("hidden", p.dataset.panel !== name);
+      p.classList.toggle("flex", p.dataset.panel === name);
+    });
+    $$(".tab-btn").forEach((b) => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle("btn-regular", on);
+      b.classList.toggle("btn-plain", !on);
+    });
+    if (name === "mine") loadMine();
+    if (name === "review") loadAdmin();
+  }
+  $$(".tab-btn").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+  // ---------- 审核入口仅本机可见 ----------
+  // 已在本机输入过口令 -> 永久显示；否则用 /submit/?admin=1 进来输一次，本机就记住了
+  const adminQuery = new URLSearchParams(location.search).get("admin") === "1";
+  if (localStorage.getItem("cyea-admin-token") || adminQuery) {
+    $("#tab-review").classList.remove("hidden");
+  }
+
+  // ---------- 投稿校验 ----------
+  const mdInput = $("#f-md");
+  const coverInput = $("#f-cover");
+  const imgsInput = $("#f-images");
+  const authorInput = $("#f-author");
+  const resultBox = $("#check-result");
+  const submitBtn = $("#btn-submit");
+
+  const selectedCategories = () => $$("#f-cats input:checked").map((i) => i.value);
+
+  function validateForm() {
+    const errs = [];
+    const md = mdInput.files[0];
+    const cover = coverInput.files[0];
+    const imgs = Array.from(imgsInput.files || []);
+    if (!md) errs.push("请上传 Markdown 正文文件（.md）");
+    if (!cover) errs.push("请上传封面图");
+    if (!authorInput.value.trim()) errs.push("请填写作者");
+    if (selectedCategories().length === 0) errs.push("请至少勾选一个文章类型");
+    if (md && !/\.(md|markdown)$/i.test(md.name)) errs.push("正文必须是 .md 文件");
+    if (cover && !/\.(png|jpe?g|webp|gif|avif)$/i.test(cover.name)) errs.push("封面图格式不支持");
+    for (const f of imgs) {
+      if (!/\.(png|jpe?g|webp|gif|avif)$/i.test(f.name)) errs.push(`正文图片格式不支持：${f.name}`);
+    }
+    const all = [md, cover, ...imgs].filter(Boolean);
+    const total = all.reduce((s, f) => s + f.size, 0);
+    if (total > 40 * 1024 * 1024) errs.push("文件总大小超过 40MB");
+    for (const f of all) {
+      if (f.size > 18 * 1024 * 1024) errs.push(`单个文件不能超过 18MB：${f.name}`);
+    }
+    return { errs, md, cover, imgs };
+  }
+
+  async function readText(file) {
+    return file ? await file.text() : "";
+  }
+
+  async function runCheck() {
+    const { errs, md, imgs } = validateForm();
+    if (md) {
+      const text = await readText(md);
+      const refs = [...text.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
+        .map((m) => m[1].trim())
+        .filter((r) => !/^https?:\/\//i.test(r) && !r.startsWith("data:"));
+      const uploaded = new Set(imgs.map((f) => f.name));
+      for (const r of refs) {
+        const base = decodeURIComponent(r).split("/").pop();
+        if (!uploaded.has(base)) errs.push(`正文引用的图片没上传：${base}`);
+      }
+      if (!text.trim()) errs.push("Markdown 正文是空的");
+    }
+    const ok = errs.length === 0;
+    resultBox.className = `rounded-lg px-3 py-2 text-sm ${ok ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400"}`;
+    resultBox.innerHTML = ok
+      ? "✓ 符合要求，可以提交"
+      : `✗ 不符合要求（${errs.length} 项）：<ul class="mt-1 ml-4 list-disc">${errs.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>`;
+    submitBtn.disabled = !ok || !API_BASE;
+    submitBtn.classList.toggle("opacity-50", submitBtn.disabled);
+    submitBtn.classList.toggle("cursor-not-allowed", submitBtn.disabled);
+    return ok;
+  }
+
+  [mdInput, coverInput, imgsInput, authorInput].forEach((el) => el.addEventListener("change", runCheck));
+  $$("#f-cats input").forEach((el) => el.addEventListener("change", runCheck));
+  $("#btn-check").addEventListener("click", runCheck);
+
+  submitBtn.addEventListener("click", async () => {
+    if (!(await runCheck())) return;
+    const { md, cover, imgs } = validateForm();
+    const fd = new FormData();
+    fd.append("md", md);
+    fd.append("cover", cover);
+    for (const f of imgs) fd.append("images", f);
+    fd.append("author", authorInput.value.trim());
+    for (const c of selectedCategories()) fd.append("categories", c);
+    fd.append("submitter", deviceId);
+    submitBtn.disabled = true;
+    submitBtn.textContent = "提交中…";
+    const hint = $("#submit-hint");
+    hint.classList.remove("hidden");
+    hint.textContent =
+      "稿件正在上传与解析，需要一定时间，请耐心等待，请勿刷新或关闭此界面…";
+    let succeeded = false;
+    try {
+      const res = await fetch(api("/api/submit"), { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.ok) {
+        succeeded = true;
+        resultBox.className =
+          "rounded-lg px-3 py-2 text-sm font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+        resultBox.innerHTML =
+          `✓ <strong>提交成功</strong>：《${esc(data.title)}》已进入审核队列，可在「我的投稿」查看进度。<br />` +
+          `<span class="font-normal text-neutral-600 dark:text-neutral-300">接下来请等待社团审核；审核通过后会自动发布上线。</span>`;
+        // 清空表单，避免同一份稿子被重复提交
+        mdInput.value = coverInput.value = imgsInput.value = "";
+        authorInput.value = "";
+        $$("#f-cats input").forEach((i) => (i.checked = false));
+        submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        resultBox.className = "rounded-lg px-3 py-2 text-sm bg-red-500/10 text-red-600 dark:text-red-400";
+        resultBox.innerHTML = `✗ 提交失败：<ul class="mt-1 ml-4 list-disc">${(data.errors || [data.error || "未知错误"]).map((e) => `<li>${esc(e)}</li>`).join("")}</ul>`;
+      }
+    } catch (e) {
+      resultBox.className = "rounded-lg px-3 py-2 text-sm bg-red-500/10 text-red-600 dark:text-red-400";
+      resultBox.textContent = "提交失败：" + e.message;
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = "提交";
+    hint.classList.add("hidden");
+    // 提交成功后表单已经清空，不能再去校验（否则会显示「不符合要求」把成功提示顶掉）
+    if (!succeeded) runCheck();
+  });
+
+  // ---------- 我的投稿 ----------
+  const STATUS = {
+    pending: { text: "待审核", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
+    approved: { text: "已通过", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
+    rejected: { text: "未通过", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
+  };
+  let mineAll = [];
+  let minePage = 1;
+  const MINE_PER_PAGE = 3;
+
+  async function loadMine() {
+    const box = $("#mine-list");
+    if (!API_BASE) {
+      box.innerHTML = `<p class="text-sm text-neutral-500">后端尚未部署。</p>`;
+      return;
+    }
+    box.innerHTML = `<p class="text-sm text-neutral-500">加载中…</p>`;
+    try {
+      const data = await (await fetch(api(`/api/mine?submitter=${encodeURIComponent(deviceId)}`))).json();
+      if (!data.items || !data.items.length) {
+        box.innerHTML = `<p class="text-sm text-neutral-500">本设备还没有投稿记录。</p>`;
+        return;
+      }
+      mineAll = data.items;
+      minePage = 1;
+      renderMine();
+    } catch (e) {
+      box.innerHTML = `<p class="text-sm text-red-500">加载失败：${esc(e.message)}</p>`;
+    }
+  }
+
+  function renderMine() {
+    const box = $("#mine-list");
+    const totalPages = Math.max(1, Math.ceil(mineAll.length / MINE_PER_PAGE));
+    if (minePage > totalPages) minePage = totalPages;
+    const slice = mineAll.slice((minePage - 1) * MINE_PER_PAGE, minePage * MINE_PER_PAGE);
+    box.innerHTML =
+      slice
+        .map((it) => {
+          const st = STATUS[it.status] || STATUS.pending;
+          return `<div class="rounded-lg border border-(--line-divider) p-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-bold">${esc(it.title)}</span>
+              <span class="text-xs px-2 py-0.5 rounded-md ${st.cls}">${st.text}</span>
+              <span class="text-xs text-neutral-500">${esc(it.author)} · ${esc(it.categories.join(" / "))} · ${new Date(it.createdAt).toLocaleString()}</span>
+            </div>
+            ${it.status === "rejected" && it.reason ? `<p class="text-sm text-red-500 mt-1">原因：${esc(it.reason)}</p>` : ""}
+            ${it.published ? `<p class="text-sm text-emerald-600 mt-1">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a></p>` : ""}
+          </div>`;
+        })
+        .join("") +
+      `<div class="flex items-center justify-center gap-3 pt-2">
+         <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-prev>上一页</button>
+         <span class="text-sm text-neutral-500">第 ${minePage} / ${totalPages} 页 · 共 ${mineAll.length} 条</span>
+         <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-next>下一页</button>
+       </div>`;
+    const prev = box.querySelector("[data-mine-prev]");
+    const next = box.querySelector("[data-mine-next]");
+    if (prev) {
+      prev.disabled = minePage <= 1;
+      prev.style.opacity = minePage <= 1 ? "0.4" : "1";
+      prev.addEventListener("click", () => {
+        minePage -= 1;
+        renderMine();
+      });
+    }
+    if (next) {
+      next.disabled = minePage >= totalPages;
+      next.style.opacity = minePage >= totalPages ? "0.4" : "1";
+      next.addEventListener("click", () => {
+        minePage += 1;
+        renderMine();
+      });
+    }
+  }
+
+  // ---------- 审核 ----------
+  // HTTP 头只能是 ASCII，中文口令先 base64(UTF-8) 再放进 x-admin-token
+  const b64 = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+  const adminHeader = () => b64(localStorage.getItem("cyea-admin-token") || "");
+  let adminStatus = "pending";
+  async function loadAdmin() {
+    const token = localStorage.getItem("cyea-admin-token");
+    if (!token) {
+      $("#admin-gate").classList.remove("hidden");
+      $("#admin-body").classList.add("hidden");
+      $("#admin-body").classList.remove("flex");
+      return;
+    }
+    $("#admin-gate").classList.add("hidden");
+    $("#admin-body").classList.remove("hidden");
+    $("#admin-body").classList.add("flex");
+    const box = $("#admin-list");
+    box.innerHTML = `<p class="text-sm text-neutral-500">加载中…</p>`;
+    try {
+      const res = await fetch(api("/api/admin/list"), {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
+        body: JSON.stringify({ status: adminStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || res.status);
+      if (!data.items.length) {
+        box.innerHTML = `<p class="text-sm text-neutral-500">没有记录。</p>`;
+        return;
+      }
+      box.innerHTML = data.items
+        .map((it) => {
+          const st = STATUS[it.status] || STATUS.pending;
+          return `<div class="rounded-lg border border-(--line-divider) p-3" data-id="${it.id}">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span class="font-bold">${esc(it.title)}</span>
+              <span class="text-xs px-2 py-0.5 rounded-md ${st.cls}">${st.text}</span>
+              <span class="text-xs text-neutral-500">${esc(it.author)} · ${esc(it.categories.join(" / "))} · ${new Date(it.createdAt).toLocaleString()}</span>
+            </div>
+            <a
+              class="inline-flex items-center gap-1 text-sm font-bold link text-(--primary) mb-2"
+              href="/submit/preview/?id=${encodeURIComponent(it.id)}"
+              target="_blank"
+              rel="noopener"
+              >查看正文完整预览 ↗</a
+            >
+            <div class="flex flex-wrap gap-2">
+              <button class="btn-regular rounded-lg h-9 px-3 text-sm font-bold" data-act="approve">审核通过</button>
+              <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-act="reject">不通过</button>
+              <input class="btn-regular rounded-lg h-9 px-3 text-sm flex-1 min-w-40" placeholder="不通过原因（可选）" data-reason />
+            </div>
+          </div>`;
+        })
+        .join("");
+      $$("#admin-list [data-act]").forEach((btn) =>
+        btn.addEventListener("click", async () => {
+          const card = btn.closest("[data-id]");
+          const id = card.dataset.id;
+          const action = btn.dataset.act === "approve" ? "approve" : "reject";
+          const reason = $("[data-reason]", card).value;
+          if (action === "approve" && !confirm("确认通过并发布到线上？")) return;
+          btn.disabled = true;
+          btn.textContent = action === "approve" ? "发布中…" : "处理中…";
+          try {
+            const r = await fetch(api("/api/admin/review"), {
+              method: "POST",
+              headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
+              body: JSON.stringify({ id, action, reason }),
+            });
+            const d = await r.json();
+            if (!d.ok) throw new Error(d.error || r.status);
+            card.style.opacity = "0.5";
+            loadAdmin();
+          } catch (e) {
+            alert("操作失败：" + e.message);
+            btn.disabled = false;
+          }
+        }),
+      );
+    } catch (e) {
+      box.innerHTML = `<p class="text-sm text-red-500">加载失败：${esc(e.message)}（口令可能不对）</p>`;
+    }
+  }
+
+  $("#btn-admin-login").addEventListener("click", async () => {
+    const token = $("#admin-token").value.trim();
+    if (!token) return;
+    localStorage.setItem("cyea-admin-token", token);
+    try {
+      const res = await fetch(api("/api/admin/list"), {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
+        body: JSON.stringify({ status: "pending" }),
+      });
+      if (!res.ok) throw new Error("口令错误");
+      $("#tab-review").classList.remove("hidden");
+      $("#admin-err").textContent = "";
+      loadAdmin();
+    } catch (e) {
+      localStorage.removeItem("cyea-admin-token");
+      $("#admin-err").textContent = e.message;
+    }
+  });
+  $("#btn-admin-logout").addEventListener("click", () => {
+    localStorage.removeItem("cyea-admin-token");
+    $("#admin-list").innerHTML = "";
+    loadAdmin();
+  });
+  $$("[data-status]").forEach((b) =>
+    b.addEventListener("click", () => {
+      adminStatus = b.dataset.status;
+      $$("[data-status]").forEach((x) => {
+        const on = x === b;
+        x.classList.toggle("btn-regular", on);
+        x.classList.toggle("btn-plain", !on);
+      });
+      loadAdmin();
+    }),
+  );
+
+  showTab(adminQuery ? "review" : "submit");
+  }
+
+  bootSubmitPage();
+  // Swup 站内切页时 <script> 不会重新执行，导致分栏点不动、审核按钮不显示；
+  // 这里在页面替换后再初始化一次（靠 submit-root 上的标记保证只初始化一次）
+  document.addEventListener("swup:contentReplaced", bootSubmitPage);
+  document.addEventListener("firefly:page:loaded", bootSubmitPage);
+</script>
