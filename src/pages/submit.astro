@@ -198,7 +198,11 @@ import { submitConfig } from "@/config/submitConfig";
   $$(".tab-btn").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
   // ---------- 审核入口仅本机可见 ----------
-  if (localStorage.getItem("cyea-admin-token")) $("#tab-review").classList.remove("hidden");
+  // 已在本机输入过口令 -> 永久显示；否则用 /submit/?admin=1 进来输一次，本机就记住了
+  const adminQuery = new URLSearchParams(location.search).get("admin") === "1";
+  if (localStorage.getItem("cyea-admin-token") || adminQuery) {
+    $("#tab-review").classList.remove("hidden");
+  }
 
   // ---------- 投稿校验 ----------
   const mdInput = $("#f-md");
@@ -454,5 +458,5 @@ import { submitConfig } from "@/config/submitConfig";
     }),
   );
 
-  showTab("submit");
+  showTab(adminQuery ? "review" : "submit");
 </script>
