@@ -215,7 +215,11 @@ import { submitConfig } from "@/config/submitConfig";
               <span class="text-xs px-2 py-0.5 rounded-md ${st.cls}">${st.text}</span>
               <span class="text-xs text-neutral-500">${esc(it.author)} · ${esc(it.categories.join(" / "))} · ${new Date(it.createdAt).toLocaleString()}</span>
             </div>
-            ${it.status === "rejected" && it.reason ? `<p class="text-sm text-red-500 mt-1">原因：${esc(it.reason)}</p>` : ""}
+            ${
+              it.status === "rejected"
+                ? `<p class="text-sm font-bold text-red-500 mt-1">未通过原因：${esc(it.reason || "（审核者未填写原因）")}</p>`
+                : ""
+            }
             ${it.published ? `<p class="text-sm text-emerald-600 mt-1">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a></p>` : ""}
           </div>`;
         })
@@ -294,7 +298,7 @@ import { submitConfig } from "@/config/submitConfig";
             <div class="flex flex-wrap gap-2">
               <button class="btn-regular rounded-lg h-9 px-3 text-sm font-bold" data-act="approve">审核通过</button>
               <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-act="reject">不通过</button>
-              <input class="btn-regular rounded-lg h-9 px-3 text-sm flex-1 min-w-40" placeholder="不通过原因（可选）" data-reason />
+              <input class="btn-regular rounded-lg h-9 px-3 text-sm flex-1 min-w-40" placeholder="不通过原因（必填，会显示给投稿人）" data-reason />
             </div>
           </div>`;
         })
@@ -304,7 +308,11 @@ import { submitConfig } from "@/config/submitConfig";
           const card = btn.closest("[data-id]");
           const id = card.dataset.id;
           const action = btn.dataset.act === "approve" ? "approve" : "reject";
-          const reason = $("[data-reason]", card).value;
+          const reason = $("[data-reason]", card).value.trim();
+          if (action === "reject" && !reason) {
+            alert("请填写不通过的原因：投稿人会在「我的投稿」里看到它。");
+            return;
+          }
           if (action === "approve" && !confirm("确认通过并发布到线上？")) return;
           btn.disabled = true;
           btn.textContent = action === "approve" ? "发布中…" : "处理中…";
