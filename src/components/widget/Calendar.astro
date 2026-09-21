@@ -184,7 +184,12 @@ const postUrlPrefix = url("/posts/");
       if (date.getUTCFullYear() !== displayYear) return;
       const month = date.getUTCMonth();
       const day = date.getUTCDate();
-      const week = Math.min(Math.floor((day - 1) / 7), 3); // 0-3
+      // 按"日历行"计算该日期落在当月的第几周（与上方日期格子一致，周日为一周开始），
+      // 不能用 Math.floor((day - 1) / 7) 直接切分：
+      // 例如 2026-09 的 1 号是周二，21 号属于当月第 4 行（第 4 周），
+      // 老算法会算成第 3 周。
+      const firstWeekday = new Date(Date.UTC(date.getUTCFullYear(), month, 1)).getUTCDay();
+      const week = Math.min(Math.floor((firstWeekday + day - 1) / 7), 3); // 0-3
       heatmapData[month][week]++;
     });
 

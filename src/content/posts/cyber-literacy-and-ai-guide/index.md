@@ -1,6 +1,6 @@
 ---
 title: 赛博扫盲与 AI 使用入门
-published: 2026-09-21 15:00:00
+published: 2026-09-21 15:58:00
 description: 从文件管理、快捷键、提问方式这些最基本的电脑习惯讲起，再讲 VPN、账号注册、VSCode 环境配置、DeepSeek 与 GPT 的入门用法，以及学工科为什么建议用 Windows。结合作者本机的真实配置写成。
 image: ./cover.png
 tags: [赛博扫盲, AI, DeepSeek, GPT, VSCode, 教程]
