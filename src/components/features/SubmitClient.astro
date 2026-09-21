@@ -220,7 +220,11 @@ import { submitConfig } from "@/config/submitConfig";
                 ? `<p class="text-sm font-bold text-red-500 mt-1">未通过原因：${esc(it.reason || "（审核者未填写原因）")}</p>`
                 : ""
             }
-            ${it.published ? `<p class="text-sm text-emerald-600 mt-1">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a></p>` : ""}
+            ${
+              it.published
+                ? `<p class="text-sm text-emerald-600 mt-1" data-post-link="${esc(it.published.slug)}">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a><span class="hidden text-red-500 font-bold" data-post-deleted>　（该文章已被删除）</span></p>`
+                : ""
+            }
           </div>`;
         })
         .join("") +
@@ -229,6 +233,23 @@ import { submitConfig } from "@/config/submitConfig";
          <span class="text-sm text-neutral-500">第 ${minePage} / ${totalPages} 页 · 共 ${mineAll.length} 条</span>
          <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-next>下一页</button>
        </div>`;
+    // 已通过的稿件，文章可能事后被删掉：HEAD 探一下，404 就显示「该文章已被删除」
+    box.querySelectorAll("[data-post-link]").forEach((el) => {
+      const slug = el.getAttribute("data-post-link") || "";
+      if (!slug) return;
+      fetch(`/posts/${encodeURIComponent(slug)}/`, { method: "HEAD" })
+        .then((r) => {
+          if (r.ok) return;
+          const a = el.querySelector("a");
+          if (a) a.remove();
+          const tag = el.querySelector("[data-post-deleted]");
+          if (tag) tag.classList.remove("hidden");
+          el.classList.remove("text-emerald-600");
+          el.classList.add("text-red-500");
+        })
+        .catch(() => {});
+    });
+
     const prev = box.querySelector("[data-mine-prev]");
     const next = box.querySelector("[data-mine-next]");
     if (prev) {
