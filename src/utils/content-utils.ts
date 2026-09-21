@@ -191,7 +191,7 @@ export async function getCategoryList(): Promise<Category[]> {
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
 	const count: { [key: string]: number } = {};
-	allBlogPosts.forEach((post: { data: { category: string | null } }) => {
+	allBlogPosts.forEach((post: { data: { category: string | null; categories?: string[] } }) => {
 		if (!post.data.category) {
 			const ucKey = i18n(I18nKey.uncategorized);
 			count[ucKey] = count[ucKey] ? count[ucKey] + 1 : 1;
@@ -204,6 +204,13 @@ export async function getCategoryList(): Promise<Category[]> {
 				: String(post.data.category).trim();
 
 		count[categoryName] = count[categoryName] ? count[categoryName] + 1 : 1;
+
+		// 一篇文章可以属于多个栏目（frontmatter 的 categories），计数时都算上
+		for (const extra of post.data.categories || []) {
+			const name = typeof extra === "string" ? extra.trim() : "";
+			if (!name || name === categoryName) continue;
+			count[name] = count[name] ? count[name] + 1 : 1;
+		}
 	});
 
 	const lst = Object.keys(count).sort((a, b) => {

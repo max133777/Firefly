@@ -184,6 +184,7 @@ description: ${description}
 image: ./${coverTarget}
 tags: [${[...new Set(tags)].join(", ")}]
 category: ${categories[0]}
+categories: [${categories.join(", ")}]
 author: ${sub.author}
 slug: ${slug}
 draft: false

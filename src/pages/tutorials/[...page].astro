@@ -20,7 +20,10 @@ export const getStaticPaths = (async ({ paginate }) => {
 	const listCategory = "教程";
 	const allPosts = await getSortedPosts();
 	const listPosts = allPosts.filter(
-		(post) => (post.data.category || "").trim() === listCategory,
+		(post) =>
+			[post.data.category, ...(post.data.categories || [])]
+				.map((c) => (c || "").trim())
+				.includes(listCategory),
 	);
 	return paginate(listPosts, { pageSize: siteConfig.pagination.postsPerPage });
 }) satisfies GetStaticPaths;

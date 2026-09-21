@@ -20,7 +20,10 @@ export const getStaticPaths = (async ({ paginate }) => {
 	const shareCategory = "技术分享";
 	const allPosts = await getSortedPosts();
 	const sharePosts = allPosts.filter(
-		(post) => (post.data.category || "").trim() === shareCategory,
+		(post) =>
+			[post.data.category, ...(post.data.categories || [])]
+				.map((c) => (c || "").trim())
+				.includes(shareCategory),
 	);
 	return paginate(sharePosts, { pageSize: siteConfig.pagination.postsPerPage });
 }) satisfies GetStaticPaths;
