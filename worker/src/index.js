@@ -41,6 +41,41 @@ const cors = (env, req) => {
 	return allowed.split(",").map((s) => s.trim()).includes(origin) ? origin : allowed;
 };
 
+/**
+ * 文件存储：优先用 R2（绑定了 FILES 时），否则回退到 KV（键前缀 file:）。
+ * KV 单个值上限 25MiB，单个文件别超过 ~18MB。
+ */
+const CONTENT_TYPES = {
+	".png": "image/png",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".webp": "image/webp",
+	".gif": "image/gif",
+	".avif": "image/avif",
+	".md": "text/markdown; charset=utf-8",
+	".markdown": "text/markdown; charset=utf-8",
+};
+
+const contentTypeOf = (name) => CONTENT_TYPES[extOf(name)] || "application/octet-stream";
+
+async function storePut(env, key, data) {
+	const type = contentTypeOf(key);
+	if (env.FILES) return env.FILES.put(key, data, { httpMetadata: { contentType: type } });
+	return env.SUBMISSIONS.put(`file:${key}`, data, { metadata: { contentType: type } });
+}
+
+async function storeGet(env, key) {
+	if (env.FILES) return env.FILES.get(key);
+	const { value, metadata } = await env.SUBMISSIONS.getWithMetadata(`file:${key}`, "arrayBuffer");
+	if (!value) return null;
+	const buf = value;
+	return {
+		body: buf,
+		arrayBuffer: async () => buf,
+		httpMetadata: { contentType: metadata?.contentType || contentTypeOf(key) },
+	};
+}
+
 const extOf = (name) => {
 	const i = name.lastIndexOf(".");
 	return i < 0 ? "" : name.slice(i).toLowerCase();
@@ -219,9 +254,13 @@ export default {
 		const origin = cors(env, request);
 		if (request.method === "OPTIONS") return json({}, 200, origin);
 
+		// 审核口令：HTTP 头只能是 ASCII，所以中文口令在客户端会先做 base64(UTF-8)；
+		// 这里两种形式都接受，方便用 curl 直接测。
+		const b64 = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
 		const isAdmin = (req) => {
 			const token = req.headers.get("x-admin-token") || "";
-			return !!env.ADMIN_TOKEN && token === env.ADMIN_TOKEN;
+			if (!env.ADMIN_TOKEN) return false;
+			return token === env.ADMIN_TOKEN || token === b64(env.ADMIN_TOKEN);
 		};
 
 		try {
@@ -259,7 +298,7 @@ export default {
 				const title = fm.title || (mdText.match(/^\s*#\s+(.+)$/m) || [, md.name.replace(/\.mdx?$/i, "")])[1];
 
 				// R2：存 md 与图片
-				await env.FILES.put(`sub/${id}/${md.name}`, await md.arrayBuffer());
+				await storePut(env, `sub/${id}/${md.name}`, await md.arrayBuffer());
 				const all = [
 					...(cover instanceof File ? [cover] : []),
 					...imageFiles,
@@ -269,7 +308,7 @@ export default {
 				for (const f of all) {
 					if (seen.has(f.name)) continue;
 					seen.add(f.name);
-					await env.FILES.put(`sub/${id}/${f.name}`, await f.arrayBuffer());
+					await storePut(env, `sub/${id}/${f.name}`, await f.arrayBuffer());
 					stored.push(f.name);
 				}
 
@@ -311,7 +350,7 @@ export default {
 				const slash = rest.indexOf("/");
 				const id = rest.slice(0, slash);
 				const name = decodeURIComponent(rest.slice(slash + 1));
-				const obj = await env.FILES.get(`sub/${id}/${name}`);
+				const obj = await storeGet(env, `sub/${id}/${name}`);
 				if (!obj) return new Response("not found", { status: 404 });
 				return new Response(obj.body, {
 					headers: { "content-type": obj.httpMetadata?.contentType || "application/octet-stream" },
@@ -344,7 +383,7 @@ export default {
 				if (action === "approve") {
 					const files = [];
 					for (const name of [rec.mdName, ...rec.files]) {
-						const obj = await env.FILES.get(`sub/${id}/${name}`);
+						const obj = await storeGet(env, `sub/${id}/${name}`);
 						if (!obj) continue;
 						const buf = new Uint8Array(await obj.arrayBuffer());
 						if (name === rec.mdName) {

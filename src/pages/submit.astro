@@ -270,6 +270,9 @@ import { submitConfig } from "@/config/submitConfig";
   }
 
   // ---------- 审核 ----------
+  // HTTP 头只能是 ASCII，中文口令先 base64(UTF-8) 再放进 x-admin-token
+  const b64 = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+  const adminHeader = () => b64(localStorage.getItem("cyea-admin-token") || "");
   let adminStatus = "pending";
   async function loadAdmin() {
     const token = localStorage.getItem("cyea-admin-token");
@@ -287,7 +290,7 @@ import { submitConfig } from "@/config/submitConfig";
     try {
       const res = await fetch(api("/api/admin/list"), {
         method: "POST",
-        headers: { "content-type": "application/json", "x-admin-token": token },
+        headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
         body: JSON.stringify({ status: adminStatus }),
       });
       const data = await res.json();
@@ -330,7 +333,7 @@ import { submitConfig } from "@/config/submitConfig";
           try {
             const r = await fetch(api("/api/admin/review"), {
               method: "POST",
-              headers: { "content-type": "application/json", "x-admin-token": token },
+              headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
               body: JSON.stringify({ id, action, reason }),
             });
             const d = await r.json();
@@ -355,7 +358,7 @@ import { submitConfig } from "@/config/submitConfig";
     try {
       const res = await fetch(api("/api/admin/list"), {
         method: "POST",
-        headers: { "content-type": "application/json", "x-admin-token": token },
+        headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
         body: JSON.stringify({ status: "pending" }),
       });
       if (!res.ok) throw new Error("口令错误");

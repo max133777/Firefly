@@ -5,12 +5,13 @@ compatibility_date = "2026-09-21"
 # 投稿记录
 [[kv_namespaces]]
 binding = "SUBMISSIONS"
-id = "请在 wrangler kv namespace create SUBMISSIONS 后填入"
+id = "4b3555e9bb32416583b4109c6b7a6121"
 
-# 投稿文件（md / 图片）
-[[r2_buckets]]
-binding = "FILES"
-bucket_name = "cyea-submissions"
+# 投稿文件：默认存在 KV（下方 R2 未开通）。
+# 开通 R2 后把下面三行取消注释即可自动切到 R2，无需改代码。
+# [[r2_buckets]]
+# binding = "FILES"
+# bucket_name = "cyea-submissions"
 
 [vars]
 GITHUB_REPO = "max133777/Firefly"
