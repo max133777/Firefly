@@ -2,6 +2,18 @@ name = "cyea-submit"
 main = "src/index.js"
 compatibility_date = "2026-09-21"
 
+# 用 Worker Route 把自有域名的子域指到这个 Worker（避开 *.workers.dev 在国内被墙）
+# 注意：这些键必须放在第一个 [[表]] 之前，否则会被当成上一个表的字段（踩过一次）
+routes = [
+  { pattern = "submit-api.cuiyingdianzi.com/*", zone_name = "cuiyingdianzi.com" }
+]
+
+# 阅读数（D1）
+[[d1_databases]]
+binding = "VIEWS"
+database_name = "cyea-views"
+database_id = "9e0e566b-590d-4457-bafa-064425734332"
+
 # 投稿记录
 [[kv_namespaces]]
 binding = "SUBMISSIONS"
@@ -13,11 +25,6 @@ id = "4b3555e9bb32416583b4109c6b7a6121"
 # binding = "FILES"
 # bucket_name = "cyea-submissions"
 
-# 用 Worker Route 把自有域名的子域指到这个 Worker（避开 *.workers.dev 在国内被墙）
-# 前置条件：zone cuiyingdianzi.com 里已有 proxied 的 DNS 记录 submit-api（A 192.0.2.1）
-routes = [
-  { pattern = "submit-api.cuiyingdianzi.com/*", zone_name = "cuiyingdianzi.com" }
-]
 
 [vars]
 GITHUB_REPO = "max133777/Firefly"
