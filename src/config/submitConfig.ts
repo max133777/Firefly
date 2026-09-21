@@ -7,7 +7,7 @@
  */
 export const submitConfig = {
 	/** Worker 地址；留空表示后端尚未部署（页面会提示） */
-	apiBase: "https://cyea-submit.predictionmax8766.workers.dev",
+	apiBase: "https://submit-api.cuiyingdianzi.com",
 
 	/** 允许投稿的分类（可多选） */
 	categories: ["教程", "资料", "技术分享"] as const,

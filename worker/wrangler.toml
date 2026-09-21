@@ -13,9 +13,10 @@ id = "4b3555e9bb32416583b4109c6b7a6121"
 # binding = "FILES"
 # bucket_name = "cyea-submissions"
 
-# 自定义域名：避开 *.workers.dev 在国内不稳定/被墙的问题（第一次 deploy 会自动建 DNS 与证书）
+# 用 Worker Route 把自有域名的子域指到这个 Worker（避开 *.workers.dev 在国内被墙）
+# 前置条件：zone cuiyingdianzi.com 里已有 proxied 的 DNS 记录 submit-api（A 192.0.2.1）
 routes = [
-  { pattern = "submit-api.cuiyingdianzi.com", custom_domain = true }
+  { pattern = "submit-api.cuiyingdianzi.com/*", zone_name = "cuiyingdianzi.com" }
 ]
 
 [vars]
