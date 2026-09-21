@@ -65,6 +65,8 @@ import { submitConfig } from "@/config/submitConfig";
         <button id="btn-submit" class="btn-regular rounded-lg h-10 px-5 font-bold opacity-50 cursor-not-allowed" disabled>提交</button>
         <button id="btn-check" class="btn-plain rounded-lg h-10 px-4 font-bold">重新校验</button>
       </div>
+
+      <p id="submit-hint" class="hidden text-sm font-bold text-amber-600 dark:text-amber-400"></p>
     </section>
 
     <!-- ============ 我的投稿 ============ -->
@@ -282,13 +284,26 @@ import { submitConfig } from "@/config/submitConfig";
     fd.append("submitter", deviceId);
     submitBtn.disabled = true;
     submitBtn.textContent = "提交中…";
+    const hint = $("#submit-hint");
+    hint.classList.remove("hidden");
+    hint.textContent =
+      "稿件正在上传与解析，需要一定时间，请耐心等待，请勿刷新或关闭此界面…";
+    let succeeded = false;
     try {
       const res = await fetch(api("/api/submit"), { method: "POST", body: fd });
       const data = await res.json();
       if (data.ok) {
-        resultBox.className = "rounded-lg px-3 py-2 text-sm bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
-        resultBox.textContent = `✓ 提交成功：《${data.title}》，等待社团审核。可在「我的投稿」查看进度。`;
+        succeeded = true;
+        resultBox.className =
+          "rounded-lg px-3 py-2 text-sm font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+        resultBox.innerHTML =
+          `✓ <strong>提交成功</strong>：《${esc(data.title)}》已进入审核队列，可在「我的投稿」查看进度。<br />` +
+          `<span class="font-normal text-neutral-600 dark:text-neutral-300">接下来请等待社团审核；审核通过后会自动发布上线。</span>`;
+        // 清空表单，避免同一份稿子被重复提交
         mdInput.value = coverInput.value = imgsInput.value = "";
+        authorInput.value = "";
+        $("#f-cats input").forEach((i) => (i.checked = false));
+        submitBtn.classList.add("opacity-50", "cursor-not-allowed");
       } else {
         resultBox.className = "rounded-lg px-3 py-2 text-sm bg-red-500/10 text-red-600 dark:text-red-400";
         resultBox.innerHTML = `✗ 提交失败：<ul class="mt-1 ml-4 list-disc">${(data.errors || [data.error || "未知错误"]).map((e) => `<li>${esc(e)}</li>`).join("")}</ul>`;
@@ -299,7 +314,9 @@ import { submitConfig } from "@/config/submitConfig";
     }
     submitBtn.disabled = false;
     submitBtn.textContent = "提交";
-    runCheck();
+    hint.classList.add("hidden");
+    // 提交成功后表单已经清空，不能再去校验（否则会显示「不符合要求」把成功提示顶掉）
+    if (!succeeded) runCheck();
   });
 
   // ---------- 我的投稿 ----------
@@ -308,6 +325,10 @@ import { submitConfig } from "@/config/submitConfig";
     approved: { text: "已通过", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
     rejected: { text: "未通过", cls: "bg-red-500/15 text-red-600 dark:text-red-400" },
   };
+  let mineAll = [];
+  let minePage = 1;
+  const MINE_PER_PAGE = 3;
+
   async function loadMine() {
     const box = $("#mine-list");
     if (!API_BASE) {
@@ -321,7 +342,21 @@ import { submitConfig } from "@/config/submitConfig";
         box.innerHTML = `<p class="text-sm text-neutral-500">本设备还没有投稿记录。</p>`;
         return;
       }
-      box.innerHTML = data.items
+      mineAll = data.items;
+      minePage = 1;
+      renderMine();
+    } catch (e) {
+      box.innerHTML = `<p class="text-sm text-red-500">加载失败：${esc(e.message)}</p>`;
+    }
+  }
+
+  function renderMine() {
+    const box = $("#mine-list");
+    const totalPages = Math.max(1, Math.ceil(mineAll.length / MINE_PER_PAGE));
+    if (minePage > totalPages) minePage = totalPages;
+    const slice = mineAll.slice((minePage - 1) * MINE_PER_PAGE, minePage * MINE_PER_PAGE);
+    box.innerHTML =
+      slice
         .map((it) => {
           const st = STATUS[it.status] || STATUS.pending;
           return `<div class="rounded-lg border border-(--line-divider) p-3">
@@ -334,9 +369,31 @@ import { submitConfig } from "@/config/submitConfig";
             ${it.published ? `<p class="text-sm text-emerald-600 mt-1">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a></p>` : ""}
           </div>`;
         })
-        .join("");
-    } catch (e) {
-      box.innerHTML = `<p class="text-sm text-red-500">加载失败：${esc(e.message)}</p>`;
+        .join("") +
+      (totalPages > 1
+        ? `<div class="flex items-center justify-center gap-3 pt-2">
+             <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-prev>上一页</button>
+             <span class="text-sm text-neutral-500">第 ${minePage} / ${totalPages} 页 · 共 ${mineAll.length} 条</span>
+             <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-next>下一页</button>
+           </div>`
+        : `<p class="text-xs text-neutral-500 pt-1">共 ${mineAll.length} 条</p>`);
+    const prev = box.querySelector("[data-mine-prev]");
+    const next = box.querySelector("[data-mine-next]");
+    if (prev) {
+      prev.disabled = minePage <= 1;
+      prev.style.opacity = minePage <= 1 ? "0.4" : "1";
+      prev.addEventListener("click", () => {
+        minePage -= 1;
+        renderMine();
+      });
+    }
+    if (next) {
+      next.disabled = minePage >= totalPages;
+      next.style.opacity = minePage >= totalPages ? "0.4" : "1";
+      next.addEventListener("click", () => {
+        minePage += 1;
+        renderMine();
+      });
     }
   }
 
