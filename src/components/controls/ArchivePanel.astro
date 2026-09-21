@@ -117,6 +117,11 @@ const foldOnFilter = collapseAllButFirst;
               class="archive-post group btn-plain block! h-10 w-full rounded-lg hover:text-[initial]"
               data-tags={JSON.stringify(post.data.tags || [])}
               data-category={post.data.category || ""}
+              data-categories={[post.data.category, ...(post.data.categories || [])]
+                .map((c) => (c || "").trim())
+                .filter(Boolean)
+                .filter((c, i, a) => a.indexOf(c) === i)
+                .join("|")}
             >
               <div class="flex flex-row justify-start items-center h-full">
                 {/* date */}
@@ -216,13 +221,17 @@ const foldOnFilter = collapseAllButFirst;
             rowTags = [];
           }
           const rowCategory = row.dataset.category || "";
+          const rowCategories = (row.dataset.categories || rowCategory)
+            .split("|")
+            .map((c) => c.trim())
+            .filter(Boolean);
 
           let match = true;
           if (tags.length > 0) {
             match = match && rowTags.some((t) => tags.includes(t));
           }
           if (categories.length > 0) {
-            match = match && !!rowCategory && categories.includes(rowCategory);
+            match = match && rowCategories.some((c) => categories.includes(c));
           }
           if (uncategorized) {
             match = match && !rowCategory;

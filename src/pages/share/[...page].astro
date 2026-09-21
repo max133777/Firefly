@@ -42,7 +42,13 @@ const { page } = Astro.props;
         {page.data.map((post) => {
           const cover = processCoverImageSync(post.data.image, post.id);
           const apiUrls = getApiUrlList(post.data.image, post.id);
-          const category = (post.data.category || "").trim();
+          const categories = [
+            ...(post.data.category ? [post.data.category] : []),
+            ...(post.data.categories || []),
+          ]
+            .map((c) => (c || "").trim())
+            .filter(Boolean)
+            .filter((c, i, a) => a.indexOf(c) === i);
           return (
             <a
               href={getPostUrlBySlug(post.id)}
@@ -79,10 +85,10 @@ const { page } = Astro.props;
                   {post.data.title}
                 </h2>
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-500 dark:text-neutral-400">
-                  {category && (
+                  {categories.length > 0 && (
                     <span class="inline-flex items-center gap-1 rounded-md bg-(--btn-regular-bg) text-(--primary) px-2 py-0.5 text-xs font-bold">
                       <Icon name="material-symbols:label-outline-rounded" class="text-sm" />
-                      {category}
+                      {categories.join(" · ")}
                     </span>
                   )}
                   <span class="inline-flex items-center gap-1 min-w-0">
