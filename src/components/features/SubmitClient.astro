@@ -229,7 +229,7 @@ import { submitConfig } from "@/config/submitConfig";
             }
             ${
               it.published
-                ? `<p class="text-sm text-emerald-600 mt-1" data-post-link="${esc(it.published.slug)}">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a><span class="hidden text-red-500 font-bold" data-post-deleted>　（该文章已被删除）</span></p>`
+                ? `<p class="text-sm text-emerald-600 mt-1" data-post-link="${esc(it.published.slug)}" data-published-at="${esc(it.published.at || "")}">已发布：<a class="link text-(--primary)" href="/posts/${esc(it.published.slug)}/" target="_blank">/posts/${esc(it.published.slug)}/</a><span class="hidden font-bold" data-post-deleted></span></p>`
                 : ""
             }
           </div>`;
@@ -247,10 +247,25 @@ import { submitConfig } from "@/config/submitConfig";
       fetch(`/posts/${encodeURIComponent(slug)}/`, { method: "HEAD" })
         .then((r) => {
           if (r.ok) return;
-          const a = el.querySelector("a");
-          if (a) a.remove();
+          // 刚通过审核的稿件：线上构建/部署需要几分钟，先显示「部署中」，避免误报已删除
+          const at = Date.parse(el.getAttribute("data-published-at") || "");
+          const fresh = !Number.isNaN(at) && Date.now() - at < 15 * 60 * 1000;
           const tag = el.querySelector("[data-post-deleted]");
-          if (tag) tag.classList.remove("hidden");
+          const a = el.querySelector("a");
+          if (fresh) {
+            if (tag) {
+              tag.textContent = "　（正在部署中，几分钟后可见）";
+              tag.classList.remove("hidden", "text-red-500");
+              tag.classList.add("text-amber-600");
+            }
+            return;
+          }
+          if (a) a.remove();
+          if (tag) {
+            tag.textContent = "　（该文章已被删除）";
+            tag.classList.remove("hidden", "text-amber-600");
+            tag.classList.add("text-red-500");
+          }
           el.classList.remove("text-emerald-600");
           el.classList.add("text-red-500");
         })

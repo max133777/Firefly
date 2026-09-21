@@ -254,32 +254,63 @@ ${body}
 	}
 
 	// 3) 建 tree / commit / 更新分支
-	const treeRes = await fetch(`${api}/git/trees`, {
-		method: "POST",
-		headers,
-		body: JSON.stringify({ base_tree: (await (await fetch(`${api}/git/commits/${baseSha}`, { headers })).json()).tree.sha, tree: entries }),
-	});
-	if (!treeRes.ok) throw new Error(`建 tree 失败: ${treeRes.status}`);
-	const treeSha = (await treeRes.json()).sha;
+	//    分支可能在读 ref 与更新 ref 之间被推进（本地推送/另一位审核人/上一次提交），
+	//    这会导致「非快进」错误，所以整段重试一次（重取最新 commit 作为父提交）。
+	const entriesSha = entries;
+	const makeCommit = async (attempt) => {
+		const refRes2 = await fetch(`${api}/git/ref/heads/${branch}`, { headers });
+		if (!refRes2.ok) throw new Error(`读取分支失败: ${refRes2.status}`);
+		const base = (await refRes2.json()).object.sha;
 
-	const commitRes = await fetch(`${api}/git/commits`, {
-		method: "POST",
-		headers,
-		body: JSON.stringify({
-			message: `post(投稿): ${sub.title}\n\n投稿人: ${sub.author}\n分类: ${categories.join(" / ")}\n投稿ID: ${sub.id}`,
-			tree: treeSha,
-			parents: [baseSha],
-		}),
-	});
-	if (!commitRes.ok) throw new Error(`建 commit 失败: ${commitRes.status}`);
-	const commitSha = (await commitRes.json()).sha;
+		const baseCommit = await fetch(`${api}/git/commits/${base}`, { headers });
+		if (!baseCommit.ok) throw new Error(`读取父提交失败: ${baseCommit.status}`);
+		const baseTree = (await baseCommit.json()).tree.sha;
 
-	const updRes = await fetch(`${api}/git/refs/heads/${branch}`, {
-		method: "PATCH",
-		headers,
-		body: JSON.stringify({ sha: commitSha, force: false }),
-	});
-	if (!updRes.ok) throw new Error(`更新分支失败: ${updRes.status}`);
+		const treeRes = await fetch(`${api}/git/trees`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ base_tree: baseTree, tree: entriesSha }),
+		});
+		if (!treeRes.ok) throw new Error(`建 tree 失败: ${treeRes.status}`);
+		const treeSha = (await treeRes.json()).sha;
+
+		const commitRes = await fetch(`${api}/git/commits`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify({
+				message: `post(投稿): ${sub.title}\n\n投稿人: ${sub.author}\n分类: ${categories.join(" / ")}\n投稿ID: ${sub.id}`,
+				tree: treeSha,
+				parents: [base],
+			}),
+		});
+		if (!commitRes.ok) throw new Error(`建 commit 失败: ${commitRes.status}`);
+		const sha = (await commitRes.json()).sha;
+
+		const updRes = await fetch(`${api}/git/refs/heads/${branch}`, {
+			method: "PATCH",
+			headers,
+			body: JSON.stringify({ sha, force: false }),
+		});
+		if (!updRes.ok) {
+			const text = await updRes.text().catch(() => "");
+			throw new Error(`更新分支失败(${updRes.status}, 第${attempt}次): ${text.slice(0, 200)}`);
+		}
+		return sha;
+	};
+
+	let commitSha = "";
+	let lastError = null;
+	for (let attempt = 1; attempt <= 2; attempt++) {
+		try {
+			commitSha = await makeCommit(attempt);
+			lastError = null;
+			break;
+		} catch (error) {
+			lastError = error;
+			if (attempt === 1) await new Promise((r) => setTimeout(r, 1200));
+		}
+	}
+	if (lastError) throw lastError;
 
 	return { slug, commitSha, url: `https://github.com/${owner}/${repo}/commit/${commitSha}` };
 }
