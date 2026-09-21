@@ -20,6 +20,11 @@ const links: NavBarLink[] = [
 		icon: "material-symbols:archive-outline-rounded",
 	},
 	{ name: "关于", url: "/about/", icon: "material-symbols:info" },
+	{
+		name: "投稿",
+		url: "/submit/",
+		icon: "material-symbols:cloud-upload-outline-rounded",
+	},
 ];
 
 export const navBarConfig: NavBarConfig = { links };
@@ -33,4 +38,5 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Share: links[3],
 	Archive: links[4],
 	About: links[5],
+	Submit: links[6],
 };

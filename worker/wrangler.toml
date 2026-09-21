@@ -1,0 +1,22 @@
+name = "cyea-submit"
+main = "src/index.js"
+compatibility_date = "2026-09-21"
+
+# 投稿记录
+[[kv_namespaces]]
+binding = "SUBMISSIONS"
+id = "请在 wrangler kv namespace create SUBMISSIONS 后填入"
+
+# 投稿文件（md / 图片）
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "cyea-submissions"
+
+[vars]
+GITHUB_REPO = "max133777/Firefly"
+GITHUB_BRANCH = "master"
+ALLOWED_ORIGIN = "https://cuiyingdianzi.com,http://localhost:4321"
+
+# 密钥用命令行设置，不要写在这里：
+#   npx wrangler secret put ADMIN_TOKEN     # 审核口令
+#   npx wrangler secret put GITHUB_TOKEN    # fine-grained PAT，仅本站仓库 contents:write
