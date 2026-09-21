@@ -375,13 +375,11 @@ import { submitConfig } from "@/config/submitConfig";
           </div>`;
         })
         .join("") +
-      (totalPages > 1
-        ? `<div class="flex items-center justify-center gap-3 pt-2">
-             <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-prev>上一页</button>
-             <span class="text-sm text-neutral-500">第 ${minePage} / ${totalPages} 页 · 共 ${mineAll.length} 条</span>
-             <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-next>下一页</button>
-           </div>`
-        : `<p class="text-xs text-neutral-500 pt-1">共 ${mineAll.length} 条</p>`);
+      `<div class="flex items-center justify-center gap-3 pt-2">
+         <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-prev>上一页</button>
+         <span class="text-sm text-neutral-500">第 ${minePage} / ${totalPages} 页 · 共 ${mineAll.length} 条</span>
+         <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-mine-next>下一页</button>
+       </div>`;
     const prev = box.querySelector("[data-mine-prev]");
     const next = box.querySelector("[data-mine-next]");
     if (prev) {
