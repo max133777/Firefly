@@ -18,6 +18,9 @@ export const submitConfig = {
 		image: [".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"],
 	},
 
+	/** 单个文件上限（字节）。文件现在存 KV，KV 单值上限 25MB，这里留足余量 */
+	maxFileBytes: 18 * 1024 * 1024,
+
 	/** 单次投稿的大小上限（字节），与 Worker 端保持一致 */
 	maxTotalBytes: 40 * 1024 * 1024,
 } as const;

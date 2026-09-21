@@ -163,6 +163,9 @@ import { submitConfig } from "@/config/submitConfig";
     const all = [md, cover, ...imgs].filter(Boolean);
     const total = all.reduce((s, f) => s + f.size, 0);
     if (total > 40 * 1024 * 1024) errs.push("文件总大小超过 40MB");
+    for (const f of all) {
+      if (f.size > 18 * 1024 * 1024) errs.push(`单个文件不能超过 18MB：${f.name}`);
+    }
     return { errs, md, cover, imgs };
   }
 

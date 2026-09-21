@@ -22,6 +22,7 @@
 const CATEGORIES = ["教程", "资料", "技术分享"];
 const IMG_EXT = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"];
 const MAX_TOTAL = 40 * 1024 * 1024;
+const MAX_FILE = 18 * 1024 * 1024;
 
 const json = (data, status = 200, origin = "*") =>
 	new Response(JSON.stringify(data), {
@@ -277,6 +278,14 @@ export default {
 				if (!(md instanceof File)) return json({ ok: false, errors: ["缺少 Markdown 文件"] }, 400, origin);
 				const total = [...imageFiles, cover].filter(Boolean).reduce((s, f) => s + (f.size || 0), 0) + md.size;
 				if (total > MAX_TOTAL) return json({ ok: false, errors: ["文件总大小超过 40MB"] }, 413, origin);
+				const tooBig = [...imageFiles, cover instanceof File ? cover : null].filter(Boolean).find((f) => f.size > MAX_FILE);
+				if (tooBig || md.size > MAX_FILE) {
+					return json(
+						{ ok: false, errors: [`单个文件不能超过 18MB（KV 存储限制）：${(tooBig || md).name}`] },
+						413,
+						origin,
+					);
+				}
 
 				const mdText = await md.text();
 				const files = [
