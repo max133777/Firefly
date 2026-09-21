@@ -456,6 +456,42 @@ export default {
 				return json({ ok: true, item: rec }, 200, origin);
 			}
 
+			// ---------- 阅读数：文章页 POST 自增并返回；GET 只读 ----------
+			if (path === "/api/views" && request.method === "GET") {
+				const slugs = (url.searchParams.get("slugs") || "")
+					.split(",")
+					.map((x) => x.trim())
+					.filter(Boolean)
+					.slice(0, 100);
+				const views = {};
+				for (const x of slugs) views[x] = 0;
+				if (slugs.length) {
+					const marks = slugs.map(() => "?").join(",");
+					const res = await env.VIEWS.prepare(
+						`SELECT slug, count FROM views WHERE slug IN (${marks})`,
+					)
+						.bind(...slugs)
+						.all();
+					for (const row of res.results || []) views[row.slug] = row.count;
+				}
+				return json({ ok: true, views }, 200, origin);
+			}
+
+			if (path.startsWith("/api/views/")) {
+				const slug = decodeURIComponent(path.slice("/api/views/".length)).trim();
+				if (!slug) return json({ ok: false, error: "缺少 slug" }, 400, origin);
+				if (request.method === "POST") {
+					const now = new Date().toISOString();
+					await env.VIEWS.prepare(
+						"INSERT INTO views (slug, count, updated_at) VALUES (?, 1, ?) ON CONFLICT(slug) DO UPDATE SET count = count + 1, updated_at = ?",
+					)
+						.bind(slug, now, now)
+						.run();
+				}
+				const row = await env.VIEWS.prepare("SELECT count FROM views WHERE slug = ?").bind(slug).first();
+				return json({ ok: true, slug, views: row ? row.count : 0 }, 200, origin);
+			}
+
 			if (path === "/") {
 				return json(
 					{

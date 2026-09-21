@@ -119,6 +119,7 @@ const latestPosts = showLatest
             return (
               <a
                 href={getPostUrlBySlug(post.id)}
+                data-view-slug={post.id}
                 class="card-base group flex flex-col rounded-(--radius-large) overflow-hidden active:scale-[0.98] transition-transform"
               >
                 <div
@@ -146,6 +147,10 @@ const latestPosts = showLatest
                     {post.data.title}
                   </h3>
                   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  <span class="inline-flex items-center gap-0.5" title="阅读数">
+                    <Icon name="material-symbols:visibility-outline-rounded" class="text-xs" />
+                    <span data-view-count>—</span>
+                  </span>
                     {latestShowCategory && categories.length > 0 && (
                       <span class="inline-flex items-center gap-0.5 rounded-md bg-(--btn-regular-bg) text-(--primary) px-1.5 py-0.5 font-bold">
                         <Icon
