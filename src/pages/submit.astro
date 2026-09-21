@@ -94,6 +94,68 @@ import { submitConfig } from "@/config/submitConfig";
       </div>
     </section>
   </div>
+  <!-- ============ 投稿规则（完整版） ============ -->
+  <div class="card-base w-full px-6 py-6 md:px-9 md:py-8 mt-4">
+    <h2 class="text-xl md:text-2xl font-bold text-(--primary) mb-4">投稿规则（完整版）</h2>
+
+    <h3 class="font-bold text-base mt-5 mb-2">一、要交什么</h3>
+    <ul class="list-disc ml-5 flex flex-col gap-1 text-neutral-700 dark:text-neutral-300">
+      <li><strong>Markdown 正文</strong>（.md / .markdown）—— 必填，一次只能交一篇</li>
+      <li><strong>封面图</strong> —— 必填，1 张</li>
+      <li><strong>正文图片</strong> —— 可多选；正文里用到几张就传几张</li>
+      <li><strong>作者</strong> —— 必填（笔名/真名都行）</li>
+      <li><strong>文章类型</strong> —— 教程 / 资料 / 技术分享，<strong>至少勾一个，可多选</strong>；勾了几个，文章就会同时出现在那几个栏目页</li>
+    </ul>
+
+    <h3 class="font-bold text-base mt-5 mb-2">二、文件限制</h3>
+    <ul class="list-disc ml-5 flex flex-col gap-1 text-neutral-700 dark:text-neutral-300">
+      <li>图片格式：<code>png / jpg / jpeg / webp / gif / avif</code></li>
+      <li><strong>单个文件不超过 18MB</strong>；全部文件合计不超过 40MB</li>
+      <li>文件名建议用英文/数字，避免空格和特殊符号（如 <code>chart-1.png</code>）</li>
+    </ul>
+
+    <h3 class="font-bold text-base mt-5 mb-2">三、图片怎么放（最容易出错的地方）</h3>
+    <ul class="list-disc ml-5 flex flex-col gap-1 text-neutral-700 dark:text-neutral-300">
+      <li>正文里用 Markdown 图片语法引用：<code>![说明文字](文件名)</code>，例如 <code>![量测波形](wave.png)</code></li>
+      <li>
+        <strong>正文里写的图片名字，必须和你上传的图片文件名完全一致</strong>（含大小写、含扩展名）。
+        正文写 <code>wave.png</code>，就必须上传一个名为 <code>wave.png</code> 的文件；
+        写成 <code>图片1.png</code>、<code>wave.PNG</code>、<code>子目录/wave.png</code> 都算对不上。
+      </li>
+      <li>
+        <strong>正文引用了但没上传的图片，不允许提交。</strong>
+        点提交时系统会直接告诉你缺哪一张（例如"正文引用的图片没上传：wave.png"），补齐后才能提交。
+      </li>
+      <li>上传了但正文里没引用的图片不会出现在文章里，建议删掉再投。</li>
+      <li><strong>上传顺序不影响显示位置</strong>：系统按文件名把图片放到正文对应位置，不是按上传先后编号，乱序上传也没关系。</li>
+      <li>封面单独处理（存成 <code>cover.扩展名</code>），<strong>不要和正文图片重名</strong>。</li>
+      <li>不推荐在正文里用外链图片（<code>https://…</code>）：外链会原样保留、不落库，对方图床挂了文章里就是裂图。</li>
+    </ul>
+
+    <h3 class="font-bold text-base mt-5 mb-2">四、正文写法</h3>
+    <ul class="list-disc ml-5 flex flex-col gap-1 text-neutral-700 dark:text-neutral-300">
+      <li>标题：<strong>建议正文第一行写 <code># 你的标题</code></strong>，系统自动取作文章标题；没写就用文件名当标题。</li>
+      <li>简介：自动取正文第一段（前 120 字），会显示在卡片和搜索结果里，所以第一段尽量一句话概括。</li>
+      <li>代码：请用围栏代码块并标明语言，例如 <code>&#96;&#96;&#96;c</code>、<code>&#96;&#96;&#96;python</code>，不要贴成纯文本。</li>
+      <li>公式：用 <code>$...$</code>（行内）或 <code>$$...$$</code>（独立成行），站点用 KaTeX 渲染。</li>
+      <li>小节标题用 <code>##</code> / <code>###</code>，会自动生成右侧目录。</li>
+    </ul>
+
+    <h3 class="font-bold text-base mt-5 mb-2">五、审核与发布</h3>
+    <ul class="list-disc ml-5 flex flex-col gap-1 text-neutral-700 dark:text-neutral-300">
+      <li>提交后状态为<strong>待审核</strong>，可在上方「我的投稿」查看进度（只显示本设备提交的稿件）。</li>
+      <li>审核<strong>不通过</strong>时会附上原因，修改后重新提交即可。</li>
+      <li>审核<strong>通过</strong>后系统自动入库并部署，几分钟后即可在对应栏目页看到。</li>
+      <li>发布时间由系统按提交时间自动生成，不需要在正文里写日期。</li>
+      <li>请只投稿<strong>原创或有授权</strong>的内容；涉及他人图片/代码请注明来源；不要提交违规或未完成的内容。</li>
+    </ul>
+
+    <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-5">
+      提交前自查：正文第一行有标题、每张图都对得上名字、代码用了代码块、类型至少勾了一个。
+      想在本机提前校验，可以拉仓库跑 <code>pnpm validate:posts</code>。
+    </p>
+  </div>
+
 </MainGridLayout>
 
 <script is:inline define:vars={{ API_BASE: submitConfig.apiBase, CATEGORIES: submitConfig.categories }}>
