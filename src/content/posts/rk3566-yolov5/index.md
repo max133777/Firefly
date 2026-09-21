@@ -1,12 +1,12 @@
 ---
-title: 在泰山派(rk3566)上部署原版yolov5模型
-published: 2026-09-21 12:10:32
-description: 
-image: ./cover.jpg
+title: "在泰山派(rk3566)上部署原版yolov5模型"
+published: 2026-09-21 20:10:32
+description: "本次教程作为一次模型量化的练手，主要是针对算子支持不完善的情况进行，实际使用时建议只用rknn model zoo中支持的代码进行运行,以获得更好的推理效果"
+image: "./cover.jpg"
 tags: [投稿, 资料]
 category: 教程
 categories: [教程, 资料]
-author: 1
+author: "1"
 slug: rk3566-yolov5
 draft: false
 ---

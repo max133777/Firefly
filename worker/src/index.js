@@ -92,6 +92,32 @@ const slugify = (title, fallback = "post") => {
 	return ascii || `${fallback}-${Date.now().toString(36)}`;
 };
 
+/** YAML 字符串安全引用：作者写成 1 会被 YAML 当数字、简介以 * 开头会被当别名，所以一律加引号 */
+const yamlStr = (v) =>
+	`"${String(v ?? "")
+		.replace(/\\/g, "\\\\")
+		.replace(/"/g, '\\"')
+		.replace(/[\r\n]+/g, " ")
+		.trim()}"`;
+
+const yamlArr = (arr) => `[${(arr || []).map((x) => yamlStr(x)).join(", ")}]`;
+
+/** 站点时间是「UTC 朴素」约定：写什么就显示什么，所以这里按北京时间生成 */
+const beijingNow = () => {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: "Asia/Shanghai",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hour12: false,
+	}).formatToParts(new Date());
+	const g = (t) => parts.find((x) => x.type === t)?.value || "00";
+	return `${g("year")}-${g("month")}-${g("day")} ${g("hour")}:${g("minute")}:${g("second")}`;
+};
+
 const parseFrontmatter = (md) => {
 	const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	if (!m) return {};
@@ -170,23 +196,31 @@ async function publishToGitHub(env, sub, files) {
 	// 去掉正文里原有的 frontmatter，统一用下面生成的
 	body = body.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
 
-	const now = new Date();
-	const p = (x) => String(x).padStart(2, "0");
-	const published = `${now.getUTCFullYear()}-${p(now.getUTCMonth() + 1)}-${p(now.getUTCDate())} ${p(now.getUTCHours())}:${p(now.getUTCMinutes())}:${p(now.getUTCSeconds())}`;
-	const fm = parseFrontmatter(files.find((f) => f.name === sub.mdName)?.text || "");
+	const published = beijingNow();
+	const rawMd = files.find((f) => f.name === sub.mdName)?.text || "";
+	const fm = parseFrontmatter(rawMd);
 	const categories = sub.categories || [];
-	const description = (fm.description || "").slice(0, 120);
-	const tags = [`投稿`, ...categories.slice(1)];
+	// 简介：优先用投稿 md 里的 description，其次取正文第一句有意义的话（必须非空，否则卡片没简介）
+	let description = (fm.description || "").replace(/[\r\n]+/g, " ").trim();
+	if (!description) {
+		const line = body
+			.split(/\r?\n/)
+			.map((l) => l.trim())
+			.find((l) => l && !l.startsWith("#") && !l.startsWith("!") && !l.startsWith("|"));
+		description = (line || sub.title || "").replace(/^前言[:：]?/, "").trim();
+	}
+	description = description.slice(0, 120);
+	const tags = [...new Set([`投稿`, ...categories.slice(1)])];
 	const indexMd = `---
-title: ${sub.title}
+title: ${yamlStr(sub.title)}
 published: ${published}
-description: ${description}
-image: ./${coverTarget}
-tags: [${[...new Set(tags)].join(", ")}]
-category: ${categories[0]}
-categories: [${categories.join(", ")}]
-author: ${sub.author}
-slug: ${slug}
+description: ${yamlStr(description)}
+image: ${yamlStr(`./${coverTarget}`)}
+tags: ${yamlArr(tags)}
+category: ${yamlStr(categories[0] || "技术分享")}
+categories: ${yamlArr(categories)}
+author: ${yamlStr(sub.author)}
+slug: ${yamlStr(slug)}
 draft: false
 ---
 
