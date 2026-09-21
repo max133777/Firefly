@@ -51,7 +51,12 @@ const latestShowCategory = latestConfig.showCategory !== false;
 const showLatest =
 	latestConfig.enable !== false && page.currentPage === 1;
 const latestPosts = showLatest
-	? (await getSortedPosts()).slice(0, latestCount)
+	? (await getSortedPosts())
+			// 「最新文章」要按发布时间严格倒序 —— getSortedPosts 会把置顶文章排在最前，
+			// 那是栏目页要的行为，首页这里不需要，所以再按 published 排一次
+			.slice()
+			.sort((a, b) => new Date(b.data.published).getTime() - new Date(a.data.published).getTime())
+			.slice(0, latestCount)
 	: [];
 ---
 
@@ -119,7 +124,6 @@ const latestPosts = showLatest
             return (
               <a
                 href={getPostUrlBySlug(post.id)}
-                data-view-slug={post.id}
                 class="card-base group flex flex-col rounded-(--radius-large) overflow-hidden active:scale-[0.98] transition-transform"
               >
                 <div
@@ -147,10 +151,6 @@ const latestPosts = showLatest
                     {post.data.title}
                   </h3>
                   <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  <span class="inline-flex items-center gap-0.5" title="阅读数">
-                    <Icon name="material-symbols:visibility-outline-rounded" class="text-xs" />
-                    <span data-view-count>—</span>
-                  </span>
                     {latestShowCategory && categories.length > 0 && (
                       <span class="inline-flex items-center gap-0.5 rounded-md bg-(--btn-regular-bg) text-(--primary) px-1.5 py-0.5 font-bold">
                         <Icon

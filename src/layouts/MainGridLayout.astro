@@ -10,7 +10,6 @@ import type { MarkdownHeading } from "astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
 import CategoryBar from "@/components/layout/CategoryBar.astro";
 import SubmitClient from "@/components/features/SubmitClient.astro";
-import ViewCountClient from "@/components/features/ViewCountClient.astro";
 import SidebarColumn from "@/components/layout/SidebarColumn.astro";
 import WallpaperSection from "@/components/layout/WallpaperSection.astro";
 import {
@@ -176,7 +175,6 @@ const {
         {/* 页脚宽度跨「侧栏 + 内容栏」，故在 #content-column 之外；又在 Swup 容器之外，
             切页不重渲染 */}
         <SubmitClient />
-<ViewCountClient />
 <Footer />
     </div>
 </div>
