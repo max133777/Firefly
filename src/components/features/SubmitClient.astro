@@ -160,13 +160,20 @@ import { submitConfig } from "@/config/submitConfig";
       }
     } catch (e) {
       resultBox.className = "rounded-lg px-3 py-2 text-sm bg-red-500/10 text-red-600 dark:text-red-400";
-      resultBox.textContent = "提交失败：" + e.message;
+      resultBox.innerHTML =
+        "✗ 提交失败：" +
+        esc(e.message) +
+        `<br /><span class="font-normal">如果是 Failed to fetch，通常是浏览器连不上投稿接口（` +
+        API_BASE +
+        `），请检查代理/VPN 后重试。</span>`;
     }
     submitBtn.disabled = false;
     submitBtn.textContent = "提交";
     hint.classList.add("hidden");
-    // 提交成功后表单已经清空，不能再去校验（否则会显示「不符合要求」把成功提示顶掉）
-    if (!succeeded) runCheck();
+    // 注意：提交后不要再跑 runCheck()！
+    // 成功时表单已清空，会显示「不符合要求」；失败时会用「符合要求，可以提交」把报错顶掉
+    // （用户就是这样既看不到成功、也看不到失败原因的）。失败原因保留在 resultBox 里，
+    // 表单没变，按钮本来就是可点的，不需要重新校验。
   });
 
   // ---------- 我的投稿 ----------

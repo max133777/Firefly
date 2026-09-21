@@ -13,6 +13,11 @@ id = "4b3555e9bb32416583b4109c6b7a6121"
 # binding = "FILES"
 # bucket_name = "cyea-submissions"
 
+# 自定义域名：避开 *.workers.dev 在国内不稳定/被墙的问题（第一次 deploy 会自动建 DNS 与证书）
+routes = [
+  { pattern = "submit-api.cuiyingdianzi.com", custom_domain = true }
+]
+
 [vars]
 GITHUB_REPO = "max133777/Firefly"
 GITHUB_BRANCH = "master"
