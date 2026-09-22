@@ -90,7 +90,9 @@ function initialActive(categoryName: string): {
               data-category-name={item.name}
             >
               {item.name}
-              <span class="pill-count">0</span>
+              <span class="pill-count">
+                {categories.find((c) => c.name === item.name)?.count ?? 0}
+              </span>
             </a>
           ))
         }
