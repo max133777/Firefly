@@ -216,10 +216,10 @@ import { submitConfig } from "@/config/submitConfig";
       slice
         .map((it) => {
           const st = STATUS[it.status] || STATUS.pending;
-          return `<div class="rounded-lg border border-(--line-divider) p-3">
+          return `<div class="rounded-lg border border-(--line-divider) p-3" data-mine-item>
             <div class="flex flex-wrap items-center gap-2">
               <span class="font-bold">${esc(it.title)}</span>
-              <span class="text-xs px-2 py-0.5 rounded-md ${st.cls}">${st.text}</span>
+              <span class="text-xs px-2 py-0.5 rounded-md ${st.cls}" data-mine-status>${st.text}</span>
               <span class="text-xs text-neutral-500">${esc(it.author)} · ${esc(it.categories.join(" / "))} · ${new Date(it.createdAt).toLocaleString()}</span>
             </div>
             ${
@@ -261,11 +261,16 @@ import { submitConfig } from "@/config/submitConfig";
             return;
           }
           if (a) a.remove();
-          if (tag) {
-            tag.textContent = "　（该文章已被删除）";
-            tag.classList.remove("hidden", "text-amber-600");
-            tag.classList.add("text-red-500");
+          if (tag) tag.classList.add("hidden");
+          // 用户要求：文章被删掉后，投稿人这边整条状态显示「已删除」（不再显示「已通过」）
+          const badge = el.closest("[data-mine-item]")
+            ? el.closest("[data-mine-item]").querySelector("[data-mine-status]")
+            : null;
+          if (badge) {
+            badge.textContent = "已删除";
+            badge.className = "text-xs px-2 py-0.5 rounded-md bg-red-500/15 text-red-600 dark:text-red-400";
           }
+          el.textContent = "已发布：该文章已被删除";
           el.classList.remove("text-emerald-600");
           el.classList.add("text-red-500");
         })
