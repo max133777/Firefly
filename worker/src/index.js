@@ -36,10 +36,12 @@ const json = (data, status = 200, origin = "*") =>
 	});
 
 const cors = (env, req) => {
-	const allowed = env.ALLOWED_ORIGIN || "*";
+	// 回显请求方的 Origin（没有就 *）。
+	// 不要改成"只允许 ALLOWED_ORIGIN 里的精确匹配"——历史 bug：
+	// 访客的 Origin 与白名单不完全一致时，响应会被浏览器判定为跨域失败（Failed to fetch），
+	// 但请求其实已经到达 Worker 并写入了数据，于是出现"提交报错但后台有待审核"的怪现象。
 	const origin = req.headers.get("Origin") || "";
-	if (allowed === "*") return "*";
-	return allowed.split(",").map((s) => s.trim()).includes(origin) ? origin : allowed;
+	return origin || "*";
 };
 
 /**

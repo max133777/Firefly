@@ -297,6 +297,9 @@ import { submitConfig } from "@/config/submitConfig";
   const b64 = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
   const adminHeader = () => b64(localStorage.getItem("cyea-admin-token") || "");
   let adminStatus = "pending";
+  let adminPage = 1;
+  let adminTotalPages = 1;
+  const ADMIN_PER_PAGE = 3;
   async function loadAdmin() {
     const token = localStorage.getItem("cyea-admin-token");
     if (!token) {
@@ -318,11 +321,15 @@ import { submitConfig } from "@/config/submitConfig";
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || res.status);
+      adminTotalPages = Math.max(1, Math.ceil(data.items.length / ADMIN_PER_PAGE));
+      if (adminPage > adminTotalPages) adminPage = adminTotalPages;
       if (!data.items.length) {
         box.innerHTML = `<p class="text-sm text-neutral-500">没有记录。</p>`;
         return;
       }
-      box.innerHTML = data.items
+      box.innerHTML =
+        data.items
+        .slice((adminPage - 1) * ADMIN_PER_PAGE, adminPage * ADMIN_PER_PAGE)
         .map((it) => {
           const st = STATUS[it.status] || STATUS.pending;
           return `<div class="rounded-lg border border-(--line-divider) p-3" data-id="${it.id}">
@@ -345,7 +352,32 @@ import { submitConfig } from "@/config/submitConfig";
             </div>
           </div>`;
         })
-        .join("");
+        .join("") +
+        `<div class="flex items-center justify-center gap-3 pt-2">
+           <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-admin-prev>上一页</button>
+           <span class="text-sm text-neutral-500">第 ${adminPage} / ${adminTotalPages} 页 · 共 ${data.items.length} 条</span>
+           <button class="btn-plain rounded-lg h-9 px-3 text-sm" data-admin-next>下一页</button>
+         </div>`;
+
+      const aPrev = box.querySelector("[data-admin-prev]");
+      const aNext = box.querySelector("[data-admin-next]");
+      if (aPrev) {
+        aPrev.disabled = adminPage <= 1;
+        aPrev.style.opacity = adminPage <= 1 ? "0.4" : "1";
+        aPrev.addEventListener("click", () => {
+          adminPage -= 1;
+          loadAdmin();
+        });
+      }
+      if (aNext) {
+        aNext.disabled = adminPage >= adminTotalPages;
+        aNext.style.opacity = adminPage >= adminTotalPages ? "0.4" : "1";
+        aNext.addEventListener("click", () => {
+          adminPage += 1;
+          loadAdmin();
+        });
+      }
+
       $$("#admin-list [data-act]").forEach((btn) =>
         btn.addEventListener("click", async () => {
           const card = btn.closest("[data-id]");
@@ -407,6 +439,7 @@ import { submitConfig } from "@/config/submitConfig";
   $$("[data-status]").forEach((b) =>
     b.addEventListener("click", () => {
       adminStatus = b.dataset.status;
+      adminPage = 1;
       $$("[data-status]").forEach((x) => {
         const on = x === b;
         x.classList.toggle("btn-regular", on);
