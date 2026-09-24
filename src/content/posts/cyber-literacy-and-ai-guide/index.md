@@ -629,6 +629,7 @@ ssh -T git@github.com
 
 | 项目 | 地址 |
 | --- | --- |
+| **官方发布版（DeepSeek 官方，Windows x64）** | <https://download.deepseek.com/dsh-desk/bin/win-x64/deepseek-harness-0.1.7-rc.1.20260924.1-win-x64.exe> |
 | **官网（推荐）** | <https://dshdesktop.cn> |
 | Windows 直接下载 | <https://www.dshdesktop.cn/api/downloads/windows> |
 | GitHub 仓库 / Releases | <https://github.com/anywhere-labs/deepseek-harness-desktop> |
