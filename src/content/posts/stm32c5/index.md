@@ -2,7 +2,7 @@
 title: "stm32c5软件开发教程"
 published: 2026-10-05 12:57:59
 description: "stm32c5系列MCU是ST今年新出的，最近做了一个stm32c542cct6最小系统板玩，主频高达144MHZ，stm32c542cct6的flash高达256kb，而且立创商城价格现在18一片，极具性价比，可以完全上位替代stm32f"
-image: "./cover.jpg"
+image: "./cover.png"
 tags: ["投稿", "技术分享"]
 category: "教程"
 categories: ["教程", "技术分享"]
