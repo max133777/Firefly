@@ -75,6 +75,8 @@ async function storeGet(env, key) {
 	return {
 		body: buf,
 		arrayBuffer: async () => buf,
+		// KV 分支也要提供 text()（R2 的对象本来就有；正文提交时用到）
+		text: async () => new TextDecoder().decode(buf),
 		httpMetadata: { contentType: metadata?.contentType || contentTypeOf(key) },
 	};
 }
@@ -506,6 +508,12 @@ export default {
 					}
 					st.index += chunk.length;
 					const more = st.index < st.queue.length;
+					if (!more) {
+						// 最后一批：把 Markdown 正文一起带上（否则 publishToGitHub 找不到正文，
+						// 会写出一篇只有 frontmatter、正文为空的文章——踩过）
+						const mdObj = await storeGet(env, `sub/${id}/${rec.mdName}`);
+						if (mdObj) batch.push({ name: rec.mdName, text: await mdObj.text() });
+					}
 					const result = await publishToGitHub(env, rec, batch, {
 						includeIndex: !more,
 						renamed: st.renamed,
