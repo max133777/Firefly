@@ -397,13 +397,22 @@ import { submitConfig } from "@/config/submitConfig";
           btn.disabled = true;
           btn.textContent = action === "approve" ? "发布中…" : "处理中…";
           try {
-            const r = await fetch(api("/api/admin/review"), {
-              method: "POST",
-              headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
-              body: JSON.stringify({ id, action, reason }),
-            });
-            const d = await r.json();
-            if (!d.ok) throw new Error(d.error || r.status);
+            // 分批入库：图片多的稿子会分多轮提交（免费版每次调用最多 50 个子请求），
+            // 这里循环调用直到后端返回 done，并显示进度
+            for (let round = 1; round <= 40; round += 1) {
+              const r = await fetch(api("/api/admin/review"), {
+                method: "POST",
+                headers: { "content-type": "application/json", "x-admin-token": adminHeader() },
+                body: JSON.stringify({ id, action, reason }),
+              });
+              const d = await r.json();
+              if (!d.ok) throw new Error(d.error || r.status);
+              if (d.done === false) {
+                btn.textContent = `入库中 ${d.progress}/${d.total}…`;
+                continue;
+              }
+              break;
+            }
             card.style.opacity = "0.5";
             loadAdmin();
           } catch (e) {

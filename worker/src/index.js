@@ -160,7 +160,7 @@ function validate({ mdText, author, categories, coverName, imageNames }) {
 }
 
 /** 把审稿通过的文章提交到 GitHub（生成一次提交） */
-async function publishToGitHub(env, sub, files) {
+async function publishToGitHub(env, sub, files, opts = {}) {
 	const [owner, repo] = (env.GITHUB_REPO || "").split("/");
 	const branch = env.GITHUB_BRANCH || "master";
 	if (!owner || !repo) throw new Error("未配置 GITHUB_REPO");
@@ -171,19 +171,26 @@ async function publishToGitHub(env, sub, files) {
 		"user-agent": "cyea-submit-worker",
 	};
 
-	const slug = sub.slug || slugify(sub.title, "post");
+	const slug = opts.slug || sub.slug || slugify(sub.title, "post");
 	// 图片统一重命名 image-1..N，正文引用同步改写
-	const imageNames = files.filter((f) => IMG_EXT.includes(extOf(f.name))).map((f) => f.name);
-	const renamed = new Map();
-	let n = 0;
-	for (const name of imageNames) {
-		if (name === sub.coverName) continue;
-		n += 1;
-		renamed.set(name, `image-${n}${extOf(name)}`);
+	// 分批入库时，重命名映射由第一次调用算好后放在 opts 里传进来，保证每批一致
+	let renamed;
+	let coverTarget;
+	if (opts.renamed) {
+		renamed = new Map(Object.entries(opts.renamed));
+		coverTarget = renamed.get(sub.coverName) || `cover${extOf(sub.coverName || ".png")}`;
+	} else {
+		renamed = new Map();
+		let n = 0;
+		for (const f of files) {
+			if (f.name === sub.coverName) continue;
+			if (!IMG_EXT.includes(extOf(f.name))) continue;
+			n += 1;
+			renamed.set(f.name, `image-${n}${extOf(f.name)}`);
+		}
+		coverTarget = `cover${extOf(sub.coverName || ".png")}`;
+		renamed.set(sub.coverName, coverTarget);
 	}
-	const coverBase = sub.coverName ? slugify(sub.title, "cover") : "cover";
-	const coverTarget = `cover${extOf(sub.coverName || ".png")}`;
-	renamed.set(sub.coverName, coverTarget);
 
 	let body = files.find((f) => f.name === sub.mdName)?.text || "";
 	body = (body.split(/\r?\n/).slice(0).join("\n")).replace(
@@ -247,7 +254,8 @@ ${body}
 	};
 
 	const dir = `src/content/posts/${slug}`;
-	await addBlob(`${dir}/index.md`, indexMd, "utf-8");
+	const includeIndex = opts.includeIndex !== false;
+	if (includeIndex) await addBlob(`${dir}/index.md`, indexMd, "utf-8");
 	for (const f of files) {
 		if (f.name === sub.mdName) continue;
 		const target = renamed.get(f.name);
@@ -465,22 +473,62 @@ export default {
 				const rec = JSON.parse(raw);
 
 				if (action === "approve") {
-					const files = [];
-					for (const name of [rec.mdName, ...rec.files]) {
+					// 免费版 Worker 每次调用最多 50 个子请求：每个文件要「读 KV + 建 blob」2 次，
+					// 所以图片多的稿子必须分批提交。这里把进度存在 rec.publish 里，由审核页循环调用。
+					const CHUNK = Number(env.PUBLISH_CHUNK || 10);
+					if (!rec.publish) {
+						const images = rec.files.filter((x) => IMG_EXT.includes(extOf(x)) && x !== rec.coverName);
+						const renamed = {};
+						images.forEach((x, k) => {
+							renamed[x] = `image-${k + 1}${extOf(x)}`;
+						});
+						if (rec.coverName) renamed[rec.coverName] = `cover${extOf(rec.coverName)}`;
+						rec.publish = {
+							renamed,
+							queue: images,
+							index: 0,
+							total: images.length + 1,
+							slug: rec.slug || slugify(rec.title, "post"),
+						};
+						rec.status = "publishing";
+						await env.SUBMISSIONS.put(`sub:${id}`, JSON.stringify(rec));
+					}
+					const st = rec.publish;
+					const chunk = st.queue.slice(st.index, st.index + CHUNK);
+					const batch = [];
+					for (const name of chunk) {
 						const obj = await storeGet(env, `sub/${id}/${name}`);
 						if (!obj) continue;
 						const buf = new Uint8Array(await obj.arrayBuffer());
-						if (name === rec.mdName) {
-							files.push({ name, text: new TextDecoder().decode(buf) });
-						} else {
-							let bin = "";
-							for (const b of buf) bin += String.fromCharCode(b);
-							files.push({ name, base64: btoa(bin) });
-						}
+						let bin = "";
+						for (const b of buf) bin += String.fromCharCode(b);
+						batch.push({ name, base64: btoa(bin) });
 					}
-					const result = await publishToGitHub(env, rec, files);
+					st.index += chunk.length;
+					const more = st.index < st.queue.length;
+					const result = await publishToGitHub(env, rec, batch, {
+						includeIndex: !more,
+						renamed: st.renamed,
+						slug: st.slug,
+					});
+					if (more) {
+						await env.SUBMISSIONS.put(`sub:${id}`, JSON.stringify(rec));
+						return json(
+							{ ok: true, done: false, progress: st.index, total: st.total, item: rec },
+							200,
+							origin,
+						);
+					}
 					rec.status = "approved";
-					rec.published = { ...result, at: new Date().toISOString() };
+					rec.published = {
+						slug: st.slug,
+						commitSha: result.commitSha,
+						url: result.url,
+						at: new Date().toISOString(),
+					};
+					delete rec.publish;
+					await env.SUBMISSIONS.put(`sub:${id}`, JSON.stringify(rec));
+					return json({ ok: true, done: true, item: rec }, 200, origin);
 				} else {
 					rec.status = "rejected";
 					rec.reason = String(reason || "").slice(0, 300);
